@@ -32,24 +32,24 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=${RMQ_USER}
       - RABBITMQ_DEFAULT_PASS=${RMQ_PASS}
-  # app:
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   container_name: ${CON_NAME}
-  #   volumes:
-  #     - ./:/usr/src/app
-  #     - /usr/src/app/node_modules
-  #   restart: always
-  #   environment:
-  #     - NODE_ENV=development
-  #   ports:
-  #     - '${EXPOSE_PORT}:${PORT}'
-  #     - '${EXPOSE_WS_PORT}:${WS_PORT}'
-  #   depends_on:
-  #     - 'postgres'
-  #   links:
-  #     - postgres
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: ${CON_NAME}
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    restart: always
+    environment:
+      - NODE_ENV=development
+    ports:
+      - '${EXPOSE_PORT}:${PORT}'
+      - '${EXPOSE_WS_PORT}:${WS_PORT}'
+    depends_on:
+      - 'postgres'
+    links:
+      - postgres
 volumes:
   postgres:
     driver: local
