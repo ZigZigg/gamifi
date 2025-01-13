@@ -1,0 +1,32 @@
+default:
+  tags:
+    - d2-server
+
+stages:
+  - deploy
+
+deploy_dev:
+  stage: deploy
+  environment:
+    name: dev
+  script:
+    - cd /home/dev/wnnr/DEV/be
+    - git pull
+    - git checkout dev
+    - cp .env.dev .env
+    - docker restart wnnr-dev
+  only:
+    - dev
+
+deploy_qa:
+  stage: deploy
+  environment:
+    name: qa
+  script:
+    - cd /home/dev/wnnr/QA/be
+    - git pull
+    - git checkout qa
+    - cp .env.qa .env
+    - docker restart wnnr-qa
+  only:
+    - qa

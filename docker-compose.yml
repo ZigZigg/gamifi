@@ -1,0 +1,55 @@
+version: "3.5"
+
+services:
+  postgres:
+    container_name: ${DB_CON_NAME}
+    hostname: ${DB_HOST}
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      PGDATA: ${PGDATA}
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - "${DB_EXPOSE_PORT}:${DB_PORT}"
+    restart: unless-stopped
+  redis:
+    image: redis:latest
+    container_name: ${REDIS_CON_NAME}
+    hostname: ${REDIS_HOST}
+    ports:
+      - '${REDIS_EXPORT_POST}:${REDIS_PORT}'
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ${RMQ_CON_NAME}
+    hostname: ${RMQ_HOST}
+    ports:
+      - '${RMQ_EXPOSE_PORT}:5672'
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq/mnesia/rabbit@app-rabbitmq:cached
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RMQ_PASS}
+  # app:
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile
+  #   container_name: ${CON_NAME}
+  #   volumes:
+  #     - ./:/usr/src/app
+  #     - /usr/src/app/node_modules
+  #   restart: always
+  #   environment:
+  #     - NODE_ENV=development
+  #   ports:
+  #     - '${EXPOSE_PORT}:${PORT}'
+  #     - '${EXPOSE_WS_PORT}:${WS_PORT}'
+  #   depends_on:
+  #     - 'postgres'
+  #   links:
+  #     - postgres
+volumes:
+  postgres:
+    driver: local

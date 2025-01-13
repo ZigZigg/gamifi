@@ -1,0 +1,15 @@
+{
+  "EMAIL_EXISTED": "Email address is already registered",
+  "EMAIL_NOT_FOUND": "We're sorry. We weren't able to identify you given the information provided.",
+  "EMAIL_NOT_FOUND_RESET": "This email address has not been registered. Please try again.",
+  "INVALID_EMAIL": "We're sorry. We weren't able to identify you given the information provided.",
+  "INVALID_PASSWORD": "Incorrect email or password",
+  "INVALID_PASSWORD_LENGTH": "Password length must be from 8 to 32 characters",
+  "OTP_WRONG": "Incorrect OTP",
+  "OTP_EXPIRED": "Invalid OTP",
+  "OTP_WRONG_EXPIRED": "Invalid OTP",
+  "USER_NAME_ALREADY_EXIST": "This username already existed, please input other username",
+  "INVALID_PASSWORD_FORMAT": "Password must be at least 8 characters and contain at least one uppercase letter, one lowercase letter, one number and one special character.",
+  "CURRENT_PASSWORD_INCORRECT": "Current password is incorrect.",
+  "INVALID_NEW_PASSWORD": "New password must be different from current password"
+}
