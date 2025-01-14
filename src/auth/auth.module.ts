@@ -14,6 +14,8 @@ import { PublicApiLogs } from '../database/models/entities';
 import { PublicApiModule } from '../public-api/public-api.module';
 import { UserModule } from 'src/user/user.module';
 import { AuthService } from './services/auth.service';
+import { MmbfService } from './services/mmbf.service';
+import { MpointService } from './services/mpoint.service';
 
 @Global()
 @Module({
@@ -34,6 +36,8 @@ import { AuthService } from './services/auth.service';
   ],
   providers: [
     AuthService,
+    MmbfService,
+    MpointService,
     MicroserviceGuard,
     EventGuard,
   ],

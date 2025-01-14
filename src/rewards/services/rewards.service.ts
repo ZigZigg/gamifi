@@ -24,7 +24,6 @@ export class RewardsService {
 
     async create(body: RewardRequestDto) {
         const {campaignId, winningRate, type} = body
-        console.log("🚀 ~ RewardsService ~ create ~ winningRate:", winningRate)
         // Find campaign by id
         const campaign = await this.campaignRepository.findOne({
             where: { id: campaignId },

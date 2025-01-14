@@ -116,11 +116,30 @@ export class ConfigService {
     RSA_ALGORITHM_PRIVATE_KEY: Joi.string().default(''),
 
     NOVU_API_KEY: Joi.string().default(''),
+    API_MMBF_URL: Joi.string().default(''),
+    MMBF_CLIENT_ID: Joi.string().default(''),
+    MMBF_USER: Joi.string().default(''),
+    MMBF_PASS: Joi.string().default(''),
+    API_MPOINT_URL: Joi.string().default(''),
+    MP_API_KEY: Joi.string().default(''),
+    MMBF_CTKM_ID: Joi.string().default(''),
   };
 
   constructor(filePath: string) {
     const config = dotenv.parse(fs.readFileSync(filePath));
     this.envConfig = this.validateInput(config);
+  }
+
+  get thirdPartyApi() {
+    return {
+      mmbfUrl: this.envConfig.API_MMBF_URL,
+      mmbfClientId: this.envConfig.MMBF_CLIENT_ID,
+      mmbfUser: this.envConfig.MMBF_USER,
+      mmmbfPass: this.envConfig.MMBF_PASS,
+      mmmbfCtkmId: this.envConfig.MMBF_CTKM_ID,
+      mpointUrl: this.envConfig.API_MPOINT_URL,
+      mpointApiKey: this.envConfig.MP_API_KEY,
+    }
   }
 
   get urlImage(): string {

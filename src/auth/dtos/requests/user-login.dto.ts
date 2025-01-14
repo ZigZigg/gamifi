@@ -125,3 +125,10 @@ export class LoginSocialDTO {
   @ApiProperty()
   readonly lastName: string;
 }
+
+export class RegisterGameDTO {
+  @ApiProperty({ required: true, type: 'string' })
+  @IsString()
+  @IsNotEmpty()
+  readonly tokenSso: string;
+}

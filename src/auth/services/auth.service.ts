@@ -1,63 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as _ from 'lodash';
-import * as moment from 'moment';
-import { HmacSHA256 } from 'crypto-js';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 
 import {
-  AppConfig,
-  ConvertPhoneNumAction,
-  ErrorCode,
-  NotificationEvent,
-} from '../../common/constants/constants';
-import { ApiError } from '../../common/classes/api-error';
-import { ConfigService } from '../../common/services/config.service';
-import { CommonService } from '../../common/services/common.service';
-
-import {
-  LoginDTO,
   RegisterDTO,
-  ResetPasswordDTO,
-  UserSocialDto,
-  LoginSocialDTO,
-  UserStatus,
-  AccountType,
-  Flatfrom,
-  LoginByPhoneDTO,
-  VerifyLinkType,
-  TokenUserInfo,
 } from '../dtos';
 
 
 import {
-  UserActivityType,
-  User,
-  EmailType,
-  UserRole,
-  PublicApiLogs,
-  PublicApiLogsStatus,
-} from '../../database/models/entities';
-import { RedisClientService } from '../../common/services/redis.service';
-import {
-  StatusCanNotLogin,
-  StatusCanNotRegister,
-  StatusCanNotSendOTP,
-} from '../constants/constant';
-import {
-  AccountService,
-  MasterService,
   UserService,
 } from '../../user/services';
-import { NoticeService } from '../../notice/services/notice.service';
-import { EmailService } from '../../email/services/email.service';
-import { JWTUtils } from '../../common/jwt-utils';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { EncryptService } from '../../common/services/encrypt.service';
-import {
-  TriggerWorkflowEvent,
-} from '../../common/dtos/events';
+import { ApiError } from 'src/common/classes/api-error';
+import { MmbfService } from './mmbf.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -65,6 +20,8 @@ export class AuthService {
   constructor(
 
     private readonly userService: UserService,
+    private readonly mmbfService: MmbfService,
+    private jwtService: JwtService,
   ) {}
 
   async register(data: RegisterDTO) {
@@ -79,5 +36,59 @@ export class AuthService {
     return;
   }
 
+  async registerGame(tokenSso: string){
+    try {
+      const accountMmbf = await this.mmbfService.getMmbfAccountInformation({tokenSso});
+      if(!accountMmbf?.phone){
+        throw new ApiError('Account not found');
+      }
+      const {phone, sub_id, fullname} = accountMmbf
+      // TODO: Register MP account
 
+      // Start create new account
+      const existUser = await this.userService.getUserByField([
+        {
+          phoneNumber: accountMmbf.phone,
+        },
+      ]);
+      
+      const payload = {
+        phone,
+        sub_id,
+        fullname
+      }
+
+      if(existUser){
+        return {
+          user: existUser,
+          token: this.jwtService.sign(payload),
+        }
+      }
+
+      // Create new account
+      const createdUser = await this.userService.createUser({
+        fullName: fullname,
+        password: `${phone}_${sub_id}`,
+        phoneNumber: phone,
+        emailVerified: true,
+      })
+
+      return {
+        user: createdUser,
+        token: this.jwtService.sign(payload),
+      }
+    } catch (error) {
+      throw new ApiError(error.message)
+    }
+  }
+
+  async getTotalTurn(tokenSso: string){
+    try {
+      const result = await this.mmbfService.getMmbfTotalTurn(tokenSso);
+      return result
+    } catch (error) {
+      throw new ApiError(error.message)
+      
+    }
+  }
 }
