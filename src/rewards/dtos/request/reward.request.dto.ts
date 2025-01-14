@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsNotEmpty, IsNumber } from "class-validator";
+import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
 import { TurnType } from "src/database/models/rewards.entity";
 
 export class RewardRequestDto {
@@ -20,8 +20,8 @@ export class RewardRequestDto {
 
     @ApiProperty()
     @IsNotEmpty()
-    @IsNumber()
-    value: number;
+    @IsString()
+    value: string;
 
     @ApiProperty()
     @IsNotEmpty()

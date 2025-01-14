@@ -42,7 +42,7 @@ export class CampaignService {
             const goodLuckRewardObject = {
                 campaign: campaign.id as any,
                 turnType: masterDataGoodLuck.id  as any,
-                value: 0,
+                value: null,
                 quantity: 0,
                 holdQuantity: 0,
                 winningRate: 100,

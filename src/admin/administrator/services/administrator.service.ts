@@ -173,7 +173,7 @@ export class AdministratorService {
     const user = await this.userService.getUserByField({ id: userId });
 
     if (!user) throw new ApiError(ErrorCode.USER_NOT_FOUND);
-    checkAdminRolePermission(user, currentUser);
+    // checkAdminRolePermission(user, currentUser);
 
     // await this.userRepo.cmdUser(
     //   UserTypeCMD.CHANGE,

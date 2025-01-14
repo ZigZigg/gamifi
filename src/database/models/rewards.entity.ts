@@ -16,8 +16,8 @@ export class Rewards {
   @ManyToOne(() => MasterData, { nullable: false })
   turnType: MasterData;
 
-  @Column({ type: 'bigint' })
-  value: number;
+  @Column()
+  value: string;
 
   @Column({ type: 'bigint', default: 0 })
   quantity: number;

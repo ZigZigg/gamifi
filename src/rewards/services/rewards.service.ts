@@ -22,6 +22,11 @@ export class RewardsService {
         private readonly masterRepository: Repository<MasterData>,
     ) {}
 
+    async findAll() {
+        const rewards = await this.rewardRepository.find();
+        return rewards;
+    }
+
     async create(body: RewardRequestDto) {
         const {campaignId, winningRate, type} = body
         // Find campaign by id
@@ -37,13 +42,24 @@ export class RewardsService {
             throw new ApiError(RewardError.CREATE_REWARD_FAILED)
         }
         const result = await this.entityManager.transaction(async (transactionalEntityManager) => {
-            console.log("🚀 ~ RewardsService ~ result ~ body:", body)
             const rewardObject = {
                 ...body,
                 campaign: campaignId as any,
                 turnType: body.turnTypeId as any,
             }
             const reward = await transactionalEntityManager.save(Rewards, rewardObject);
+
+            const masterDataGoodLuck = await this.masterRepository.findOne({
+                where: { value: 'GOOD_LUCK' },
+            })
+
+            const goodLuckReward = await this.rewardRepository.findOne({
+                where: { campaign: { id: campaignId }, type, turnType: { id: masterDataGoodLuck.id } }
+            })
+            if(goodLuckReward) {
+                const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) - winningRate;
+                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: currentGoodLuckRate});
+            }
             return reward;
         })
         return result;

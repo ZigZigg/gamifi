@@ -36,8 +36,8 @@ import {
 
 @Controller('admin/administrators')
 @ApiTags('Admin Administrator')
-@UseGuards(RolesGuard)
-@UseGuards(JwtAuthGuard)
+// @UseGuards(RolesGuard)
+// @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdministratorController {
   constructor(private readonly adminService: AdministratorService) {}

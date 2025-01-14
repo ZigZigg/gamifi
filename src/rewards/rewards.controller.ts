@@ -15,9 +15,15 @@ export class RewardsController {
 
     @Post()
     @UsePipes(new ValidationPipe({ transform: true }))
-
     async create(@Body() body: RewardRequestDto) {
         const campaign = await this.rewardsService.create(body);
         return new ApiResult().success(campaign);
+    }
+
+    // Get list of rewards
+    @Get()
+    async findAll() {
+        const rewards = await this.rewardsService.findAll();
+        return new ApiResult().success(rewards);
     }
 }
