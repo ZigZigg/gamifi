@@ -42,6 +42,6 @@ import { MpointService } from './services/mpoint.service';
     EventGuard,
   ],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, JwtModule, MmbfService, MpointService],
 })
 export class AuthModule {}

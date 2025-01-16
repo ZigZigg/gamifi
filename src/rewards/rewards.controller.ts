@@ -3,7 +3,9 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ApiResult } from 'src/common/classes/api-result';
 import { RewardsService } from './services/rewards.service';
-import { RewardRequestDto } from './dtos/request/reward.request.dto';
+import { RewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { TokenUserInfo } from 'src/auth/dtos';
 
 
 @Controller('rewards')
@@ -25,5 +27,12 @@ export class RewardsController {
     async findAll() {
         const rewards = await this.rewardsService.findAll();
         return new ApiResult().success(rewards);
+    }
+
+    @Post('/spinReward')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async spinReward(@Body() body: SpinRewardRequestDto, @CurrentUser() currentUser: TokenUserInfo) {
+        const result = await this.rewardsService.handleProcessSpinReward(body, currentUser);
+        return new ApiResult().success(result);
     }
 }

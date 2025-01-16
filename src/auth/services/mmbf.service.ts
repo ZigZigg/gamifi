@@ -1,10 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { MmbfInformationDto } from "../dtos/mmbf.dto";
+import { MmbfInformationDto, MmbfUpdateGameResultRequest, MmfRegisterSession } from "../dtos/mmbf.dto";
 import * as Axios from 'axios';
 import { ApiError } from "src/common/classes/api-error";
 import { AuthError } from "../constants/errors";
 import { ConfigService } from "src/common/services/config.service";
 import * as crypt from 'crypto';
+import { GetTotalTurnMMBFDto } from "../dtos";
+import { start } from "repl";
 const axios = Axios.default;
 
 @Injectable()
@@ -17,6 +19,15 @@ export class MmbfService {
     const user = this.configService.thirdPartyApi.mmbfUser;
     const password = this.configService.thirdPartyApi.mmmbfPass;
     const dataToHash = `${user}${password}${tokenSso}${time}`;
+    const checksum = crypt.createHash('sha256').update(dataToHash).digest('hex');
+    return checksum;
+  }
+
+  createChecksumResultUpdate(payloadRequest: MmbfUpdateGameResultRequest, time: string){
+    const {sessionId, totalPoint, point, ctkmId} = payloadRequest
+    const password = this.configService.thirdPartyApi.mmmbfPass;
+
+    const dataToHash = `${sessionId}${ctkmId}${time}${time}${point}${totalPoint}${password}`;
     const checksum = crypt.createHash('sha256').update(dataToHash).digest('hex');
     return checksum;
   }
@@ -45,7 +56,8 @@ export class MmbfService {
     }
   }
 
-  async getMmbfTotalTurn(tokenSso: string){
+  async getMmbfTotalTurn(data: GetTotalTurnMMBFDto){
+    const {tokenSso, ctkmId} = data
     try {
         const options = {
             headers: {
@@ -59,7 +71,7 @@ export class MmbfService {
             token: tokenSso,
             time,
             checksum,
-            ctkm_id: this.configService.thirdPartyApi.mmmbfCtkmId
+            ctkm_id: ctkmId
         }
         const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/sso/get-total-turn`, payload, options);
         const {data} = response.data;
@@ -73,6 +85,67 @@ export class MmbfService {
     } catch (error) {
         throw new ApiError(error || AuthError.GET_MMBF_TOTAL_TURN_FAILED)
     }
+  }
+
+  async registerGameSession(payloadRequest: MmfRegisterSession){
+    const {tokenSso, phone, ctkmId} = payloadRequest
+    
+
+    const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPass}`;
+    const encodedAuthString = Buffer.from(authString).toString('base64');
+    const options = {
+      headers: {
+        Authorization: `Basic ${encodedAuthString}`,
+      },
+    }
+
+    const payload = {
+        token: tokenSso,
+        phone,
+        ctkm_id: ctkmId
+    }
+    const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/register-session`, payload, options);
+    const {data} = response.data;
+    if(!data){
+      const error = response.data?.errors[0]
+      if(error){
+        throw new ApiError(error.message || 'Start game session failed')
+      }
+    }
+    return  data
+  }
+
+  async updateGameResult(payloadRequest: MmbfUpdateGameResultRequest){
+    const {sessionId, totalPoint, point, ctkmId} = payloadRequest
+    const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPass}`;
+    const encodedAuthString = Buffer.from(authString).toString('base64');
+    const options = {
+      headers: {
+        Authorization: `Basic ${encodedAuthString}`,
+      },
+    }
+    const time = Date.now().toString();
+
+    const checksum = this.createChecksumResultUpdate(payloadRequest, time);
+    const payload = {
+        session_id: sessionId,
+        ctkm_id: ctkmId,
+        point,
+        total_point: totalPoint,
+        start_time: time,
+        end_time: time,
+        checksum
+    }
+    const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/update-sessionid-result`, payload, options);
+
+    const {data} = response.data;
+    if(!data){
+      const error = response.data?.errors[0]
+      if(error){
+        throw new ApiError(error.message || 'Start game session failed')
+      }
+    }
+    return  data
   }
 
 }

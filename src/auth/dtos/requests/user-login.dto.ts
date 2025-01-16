@@ -132,3 +132,15 @@ export class RegisterGameDTO {
   @IsNotEmpty()
   readonly tokenSso: string;
 }
+
+export class GetTotalTurnMMBFDto {
+  @ApiProperty({ required: true, type: 'string' })
+  @IsString()
+  @IsNotEmpty()
+  readonly tokenSso: string;
+
+  @ApiProperty({ required: true, type: 'string' })
+  @IsString()
+  @IsNotEmpty()
+  readonly ctkmId: string;
+}

@@ -3,6 +3,7 @@ import * as _ from 'lodash';
 
 
 import {
+  GetTotalTurnMMBFDto,
   RegisterDTO,
 } from '../dtos';
 
@@ -52,13 +53,17 @@ export class AuthService {
         },
       ]);
       
-      const payload = {
-        phone,
+      let payload: any = {
+        phoneNumber: phone,
         sub_id,
         fullname
       }
 
       if(existUser){
+        payload = {
+          ...payload,
+          id: existUser.id,
+        }
         return {
           user: existUser,
           token: this.jwtService.sign(payload),
@@ -72,7 +77,10 @@ export class AuthService {
         phoneNumber: phone,
         emailVerified: true,
       })
-
+      payload = {
+        ...payload,
+        id: createdUser.id,
+      }
       return {
         user: createdUser,
         token: this.jwtService.sign(payload),
@@ -82,9 +90,9 @@ export class AuthService {
     }
   }
 
-  async getTotalTurn(tokenSso: string){
+  async getTotalTurn(data: GetTotalTurnMMBFDto){
     try {
-      const result = await this.mmbfService.getMmbfTotalTurn(tokenSso);
+      const result = await this.mmbfService.getMmbfTotalTurn(data);
       return result
     } catch (error) {
       throw new ApiError(error.message)

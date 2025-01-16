@@ -25,6 +25,7 @@ import { AppConfig } from './common/constants/constants';
 import { User } from './database/models/entities';
 import { CampaignModule } from './campaign/campaign.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { RewardHistoryModule } from './rewardHistory/rewardHistory.module';
 
 @Module({
   imports: [
@@ -74,7 +75,8 @@ import { RewardsModule } from './rewards/rewards.module';
     NoticeModule,
     AdminModule,
     CampaignModule,
-    RewardsModule
+    RewardsModule,
+    RewardHistoryModule
   ],
   controllers: [HealthCheckController],
   providers: [

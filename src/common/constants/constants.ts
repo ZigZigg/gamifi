@@ -1,3 +1,4 @@
+import { text } from 'stream/consumers';
 
 export const AppConfig = {
   DB: 'DB_TWO',
@@ -123,3 +124,101 @@ export enum TagAction {
 }
 
 export { ErrorCode } from './errors';
+
+export const RewardMappingType = [
+  {
+    key: 'PHONE_CARD_5000',
+    text: 'Nạp 5000',
+    type: 1
+  },
+  {
+    key: 'MP_SCORE_68',
+    text: '68 điểm MyPoint',
+    type: 2
+  },
+  {
+    key: 'MP_SCORE_686',
+    text: '686 điểm MyPoint',
+    type: 3
+  },
+  {
+    key: 'MP_SCORE_6868',
+    text: '6868 điểm MyPoint',
+    type: 4
+  },
+  {
+    key: 'AIRPOD_PIECE_1',
+    text: 'icon mảnh ghép AirPods (1)',
+    type: 5
+  },
+  {
+    key: 'AIRPOD_PIECE_2',
+    text: 'icon mảnh ghép AirPods (2)',
+    type: 6
+  },
+  {
+    key: 'IP_PIECE_1',
+    text: 'icon mảnh ghép iPhone (1)',
+    type: 7
+  },
+  {
+    key: 'VOUCHER_MP',
+    text: 'Voucher MyPoint',
+    type: 8
+  },
+  {
+    key: 'PHONE_CARD_50000',
+    text: 'Nạp 50000',
+    type: 9
+  },
+  {
+    key: 'PHONE_CARD_100000',
+    text: 'Nạp 100000',
+    type: 10
+  },
+  {
+    key: 'MP_SCORE_68680',
+    text: '68680 điểm MyPoint',
+    type: 11
+  },
+  {
+    key: 'PHONE_CARD_200000',
+    text: 'Nạp 200000',
+    type: 12
+  },
+  {
+    key: 'IP_PIECE_2',
+    text: 'icon mảnh ghép iPhone (2)',
+    type: 13
+  },
+  {
+    key: 'PHONE_CARD_500000',
+    text: 'Nạp 500000',
+    type: 14
+  },
+  {
+    key: 'MP_SCORE_686868',
+    text: '686868 điểm MyPoint',
+    type: 15
+  },
+  {
+    key: 'IP_PIECE_3',
+    text: 'icon mảnh ghép iPhone (3)',
+    type: 16
+  },
+  {
+    key: 'AIRPOD_PIECE_3',
+    text: 'icon mảnh ghép AirPods (3)',
+    type: 17
+  },
+  {
+    key: 'GOOD_LUCK',
+    text: 'Chúc bạn may mắn lần sau',
+    type: 18
+  },
+]
+
+export const ConditionTurnType = {
+  FREE: [1, 3, 13, 5],
+  PAID: [6, 18]
+}

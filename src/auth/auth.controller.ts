@@ -11,6 +11,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 // Other import
 import { AuthService } from './services/auth.service';
 import {
+  GetTotalTurnMMBFDto,
   RegisterDTO,
   RegisterGameDTO,
 } from './dtos';
@@ -54,11 +55,10 @@ export class AuthController {
   @Post('/getTotalTurnMmbf')
   @UsePipes(new ValidationPipe({ transform: true }))
   @ApiOkResponse({
-    description: 'Register by email',
+    description: 'Get total turn MyMBF',
   })
-  async getTotalTurnMmbf(@Body() data: RegisterGameDTO) {
-    const {tokenSso} = data
-    const dataResponse = await this.authService.getTotalTurn(tokenSso);
+  async getTotalTurnMmbf(@Body() data: GetTotalTurnMMBFDto) {
+    const dataResponse = await this.authService.getTotalTurn(data);
 
     return new ApiResult().success(dataResponse);
   }

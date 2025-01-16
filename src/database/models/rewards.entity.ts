@@ -8,6 +8,13 @@ export enum TurnType {
   PAID='PAID'
 }
 
+export enum RewardWinningType {
+  BASIC='BASIC',
+  MID='MID',
+  PREMIUM='PREMIUM',
+  NOLUCK='NOLUCK'
+}
+
 @Entity('rewards')
 export class Rewards {
   @PrimaryGeneratedColumn()
@@ -28,6 +35,9 @@ export class Rewards {
   @Column({ type: 'numeric', precision: 12, scale: 8, name: 'winning_rate' })
   winningRate: number;
 
+  @Column({ type: 'numeric', precision: 12, scale: 8, name: 'initial_winning_rate' })
+  initialWinningRate: number;
+
   @Column({
     nullable: false,
     type: 'enum',
@@ -35,6 +45,15 @@ export class Rewards {
     default: TurnType.FREE,
   })
   type: TurnType;
+
+  @Column({
+    nullable: false,
+    type: 'enum',
+    enum: RewardWinningType,
+    default: RewardWinningType.BASIC,
+    name: 'winning_type'
+  })
+  winningType: RewardWinningType;
 
   @ManyToOne(() => Campaign, { nullable: false })
   campaign: Campaign;
