@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { AppConfig, ConditionTurnType, RewardMappingType } from 'src/common/constants/constants';
-import { EntityManager, Not, Repository } from 'typeorm';
+import { AppConfig, ConditionTurnType, FullCraftReward, RewardMappingType } from 'src/common/constants/constants';
+import { EntityManager, In, Not, Repository } from 'typeorm';
 import { Campaign, CampaignStatus } from 'src/database/models/campaign.entity';
 import { ApiError } from 'src/common/classes/api-error';
 import { Rewards, RewardWinningType, TurnType } from 'src/database/models/rewards.entity';
@@ -14,6 +14,9 @@ import { RedisClientService } from 'src/common/services/redis.service';
 import { MmbfService } from 'src/auth/services/mmbf.service';
 import { parse } from 'path';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConfigService } from 'src/common/services/config.service';
+import { CommonService } from 'src/common/services/common.service';
+import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.service';
 
 @Injectable()
 export class RewardsService {
@@ -31,6 +34,8 @@ export class RewardsService {
         private readonly redis: RedisClientService,
         private readonly mmbfService: MmbfService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly configService: ConfigService,
+        private readonly rewardHistoryService: RewardHistoryService
     ) {}
 
     async findAll() {
@@ -140,10 +145,12 @@ export class RewardsService {
                 throw new ApiError(RewardError.REWARDS_EMPTY)
             }
 
-            const winningReward = this.handleSpinReward(rewards.slice(0,1));
+            const winningReward = this.handleSpinReward(rewards);
             if(!winningReward){
                 throw new ApiError(RewardError.REWARD_NOT_FOUND)
             }
+            const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
+
             await this.entityManager.transaction(async (transactionalEntityManager) => {
                 const updatedRewardResult = await transactionalEntityManager.createQueryBuilder()
                 .update(Rewards)
@@ -163,8 +170,11 @@ export class RewardsService {
 
                 // Start session game mmbf and send result
 
-                // const resultGameSession = await this.mmbfService.registerGameSession({tokenSso, phone: user.phoneNumber, ctkmId});
-                // console.log("🚀 ~ RewardsService ~ awaitthis.entityManager.transaction ~ resultGameSession:", resultGameSession)
+                if(this.configService.thirdPartyApi.enableRegisterMmbf === 'true'){
+                    const resultGameSession = await this.mmbfService.registerGameSession({tokenSso, phone: user.phoneNumber, ctkmId, rewardId: winningReward.id});
+                    const totalPoint = Number(winningReward.value) || 0;
+                    await this.mmbfService.updateGameResult({sessionId: resultGameSession.sessionId, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
+                }
 
                 // Save reward history
                 await transactionalEntityManager.save(RewardHistory, {
@@ -173,7 +183,6 @@ export class RewardsService {
                     receiveDate: new Date().toISOString(), 
                 });
             })
-            const rewardNaming = this.rewardIntoEnumString(winningReward)
             return {...winningReward, name: rewardNaming.text};
         } catch (error) {
             throw error;
@@ -183,11 +192,113 @@ export class RewardsService {
 
     }
 
+    async craftReward(rewardIds: number[], currentUser: TokenUserInfo){
+        if(!rewardIds.length) {
+            throw new ApiError(RewardError.REWARDS_EMPTY)
+        }
+        // Get active campaign
+        const campaign = await this.campaignRepository.findOne({
+            where: { status: CampaignStatus.ACTIVE },
+        });
+
+        if(!campaign) {
+            throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
+        }
+
+        // Get list rewards history
+        const rewardHistories: any[] = await this.rewardHistoryService.getRewardHistoryFromUser(currentUser);
+        // Check if rewardHistories list include all rewardIds
+        const rewardHistoriesById = rewardHistories.filter((rewardHistory) => {
+            return rewardIds.includes(rewardHistory.reward.id)
+        })
+        if(!rewardHistoriesById?.length){
+            throw new ApiError(RewardError.REWARD_CRAFT_NOT_MATCH)
+        }
+        const rewardTypeData = rewardHistoriesById.map(item => {
+
+            return `${item.reward?.turnType?.value || 'UNKNOWN'}`
+        }).sort().join('_');
+        const matchedReward = FullCraftReward.find(item => item.craftString === rewardTypeData);
+        if(!matchedReward){
+            throw new ApiError(RewardError.REWARD_CRAFT_NOT_MATCH)
+        }
+
+        // Save reward history
+        await this.entityManager.transaction(async (transactionalEntityManager) => {
+
+            // Get reward data from Master data by type
+            const masterData = await this.masterRepository.findOne({
+                where: { value: matchedReward.type },
+            });
+
+            // Find reward
+            const winningReward = await this.rewardRepository.findOne({
+                where: { campaign: { id: campaign.id }, type: TurnType.PAID, turnType: { id: masterData.id } },
+                relations: ['turnType']
+            })
+
+            if(!winningReward) {
+                throw new ApiError(RewardError.MISSING_REWARD_MASTER_DATA)
+            }
+
+            // Save reward history
+            await transactionalEntityManager.save(RewardHistory, {
+                reward: winningReward.id as any,
+                user: currentUser.id as any,
+                receiveDate: new Date().toISOString(), 
+            });
+        })
+
+        return matchedReward
+
+    }
+
+    async getRewardStocks(){
+        // Get active campaign
+        const campaign = await this.campaignRepository.findOne({
+            where: { status: CampaignStatus.ACTIVE },
+        });
+
+        if(!campaign) {
+            throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
+        }
+        const ignoreRewardsType  = ['GOOD_LUCK', 'AIRPOD_DEVICE', 'IPHONE_DEVICE']
+        const rewards = await this.rewardRepository.find({
+            where: { 
+            campaign: { id: campaign.id },
+            turnType: { value: Not(In(ignoreRewardsType)) }
+            },
+            relations: ['turnType']
+        });
+
+        const rewardStocks = rewards.map((reward) => {
+            return {
+                ...reward,
+                nameType: CommonService.rewardIntoEnumString(reward).key,
+            }
+        })
+        if(!rewardStocks.length) {
+            throw new ApiError(RewardError.REWARDS_EMPTY)
+        }
+        const groupedRewardStocks = rewardStocks.reduce((acc, reward) => {
+            const { nameType, quantity } = reward;
+            const currentQuantity = Number(quantity) || 0;
+            if (!acc[nameType]) {
+                acc[nameType] = { ...reward, quantity: 0 };
+            }
+            acc[nameType].quantity += currentQuantity;
+            return acc;
+        }, {});
+
+        const result = Object.values(groupedRewardStocks);
+        return result;
+    }
+
     handleSpinReward(rewards: Rewards[]){
         if (!rewards || rewards.length === 0) {
             throw new ApiError(RewardError.REWARDS_EMPTY);
         }
-
+        
         const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()) , 0);
 
         if (totalRating <= 0) {
@@ -195,7 +306,7 @@ export class RewardsService {
         }
 
         const random = Math.random() * totalRating;
-
+        
         let cumulative = 0;
         for (const reward of rewards) {
             cumulative +=  parseFloat(reward.winningRate.toString());
@@ -219,22 +330,5 @@ export class RewardsService {
             return RewardWinningType.MID
         }
         return null;
-    }
-
-    rewardIntoEnumString(reward: Rewards){
-        const {value, turnType} = reward
-        const {value: turnTypeValue, name} = turnType
-        let enumString = `${turnTypeValue}`
-        if(value){
-            enumString = `${turnTypeValue}_${value}`
-        }
-        const findObject = RewardMappingType.find(item => item.key === enumString)
-        if(findObject){
-            return findObject
-        }
-        return {
-            key: enumString,
-            text: `${name}`
-        }
     }
 }

@@ -12,13 +12,14 @@ import { BullModule } from '@nestjs/bull';
 import { MmbfService } from 'src/auth/services/mmbf.service';
 import { MpointService } from 'src/auth/services/mpoint.service';
 import { RewardsListener } from './rewards.listener';
+import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.service';
 
 // create module
 @Module({
     imports: [
         TypeOrmModule.forFeature([Campaign, Rewards, MasterData, RewardHistory], AppConfig.DB)
     ],
-    providers: [RewardsService, MmbfService, MpointService, RewardsListener],
+    providers: [RewardsService, MmbfService, MpointService, RewardsListener, RewardHistoryService],
     controllers: [RewardsController],
 })
 export class RewardsModule {}

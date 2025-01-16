@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { MmbfInformationDto, MmbfUpdateGameResultRequest, MmfRegisterSession } from "../dtos/mmbf.dto";
 import * as Axios from 'axios';
 import { ApiError } from "src/common/classes/api-error";
@@ -11,6 +11,8 @@ const axios = Axios.default;
 
 @Injectable()
 export class MmbfService {
+  private readonly logger = new Logger(this.constructor.name);
+  
   constructor(
     private readonly configService: ConfigService,
   ) {}
@@ -88,8 +90,8 @@ export class MmbfService {
   }
 
   async registerGameSession(payloadRequest: MmfRegisterSession){
-    const {tokenSso, phone, ctkmId} = payloadRequest
-    
+    const {tokenSso, phone, ctkmId, rewardId} = payloadRequest
+    this.logger.log(`Register game session with phone: ${phone}, ctkmId: ${ctkmId} and rewardId: ${rewardId}`)
 
     const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPass}`;
     const encodedAuthString = Buffer.from(authString).toString('base64');
@@ -116,7 +118,8 @@ export class MmbfService {
   }
 
   async updateGameResult(payloadRequest: MmbfUpdateGameResultRequest){
-    const {sessionId, totalPoint, point, ctkmId} = payloadRequest
+    const {sessionId, totalPoint, point, ctkmId, rewardId} = payloadRequest
+    this.logger.log(`Update game result with sessionId: ${sessionId}, ctkmId: ${ctkmId}, point: ${point}, totalPoint: ${totalPoint} and rewardId: ${rewardId}`)
     const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPass}`;
     const encodedAuthString = Buffer.from(authString).toString('base64');
     const options = {
@@ -145,6 +148,7 @@ export class MmbfService {
         throw new ApiError(error.message || 'Start game session failed')
       }
     }
+    this.logger.log(`Update game result with sessionId: ${sessionId}  successfully`)
     return  data
   }
 

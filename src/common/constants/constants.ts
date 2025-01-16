@@ -222,3 +222,14 @@ export const ConditionTurnType = {
   FREE: [1, 3, 13, 5],
   PAID: [6, 18]
 }
+
+export const FullCraftReward = [
+  {
+    craftString: 'AIRPOD_PIECE_1_AIRPOD_PIECE_2_AIRPOD_PIECE_3',
+    type: 'AIRPOD_DEVICE',
+  },
+  {
+    craftString: 'IP_PIECE_1_IP_PIECE_2_IP_PIECE_3',
+    type: 'IPHONE_DEVICE',
+  },
+]

@@ -6,6 +6,7 @@ import {
   ErrorCode,
   halfYearMonthValue,
   monthsOfYear,
+  RewardMappingType,
 } from '../constants/constants';
 import * as moment from 'moment';
 import { DurationInputArg2 } from 'moment';
@@ -14,6 +15,7 @@ import { SelectQueryBuilder } from 'typeorm';
 import { Between } from 'typeorm';
 import { removeHostAndQuery } from '../functions';
 import { MediaTypeEnum, MetaData } from '../typeorm/base.entity';
+import { Rewards } from 'src/database/models/rewards.entity';
 
 export interface FilterOptions {
   alias?: string;
@@ -313,6 +315,23 @@ export class CommonService {
     return type === MediaTypeEnum.UPLOAD ? removeHostAndQuery(url) : url;
   }
 
+  public static rewardIntoEnumString(reward: Rewards){
+          const {value, turnType} = reward
+          const {value: turnTypeValue, name} = turnType
+          let enumString = `${turnTypeValue}`
+          if(value){
+              enumString = Number(value) ?  `${turnTypeValue}_${value}` : `${turnTypeValue}`
+          }
+          const findObject = RewardMappingType.find(item => item.key === enumString)
+          if(findObject){
+              return findObject
+          }
+          return {
+              key: enumString,
+              text: `${name}`,
+              type: 0
+          }
+      }
 
   public static addDashToKey(key: string) {
     return key.replace(

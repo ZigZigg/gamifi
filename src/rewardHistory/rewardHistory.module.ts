@@ -9,5 +9,6 @@ import { AppConfig } from 'src/common/constants/constants';
     imports: [TypeOrmModule.forFeature([RewardHistory], AppConfig.DB)],
     providers: [RewardHistoryService],
     controllers: [RewardHistoryController],
+    exports: [RewardHistoryService],
 })
 export class RewardHistoryModule {}

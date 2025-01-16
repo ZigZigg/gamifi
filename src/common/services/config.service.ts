@@ -123,6 +123,7 @@ export class ConfigService {
     API_MPOINT_URL: Joi.string().default(''),
     MP_API_KEY: Joi.string().default(''),
     MMBF_CTKM_ID: Joi.string().default(''),
+    ENABLE_REGISTER_MMBF: Joi.string().default(''),
   };
 
   constructor(filePath: string) {
@@ -139,6 +140,7 @@ export class ConfigService {
       mmmbfCtkmId: this.envConfig.MMBF_CTKM_ID,
       mpointUrl: this.envConfig.API_MPOINT_URL,
       mpointApiKey: this.envConfig.MP_API_KEY,
+      enableRegisterMmbf: this.envConfig.ENABLE_REGISTER_MMBF,
     }
   }
 

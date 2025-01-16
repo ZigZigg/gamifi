@@ -70,3 +70,10 @@ export class SpinRewardRequestDto {
     @IsNotEmpty()
     readonly ctkmId: string;
 }
+
+export class CraftRewardRequestDto {
+  @ApiProperty({ type: [Number] })
+  @IsNotEmpty()
+  @IsNumber({}, { each: true })
+  rewardIds: number[];
+}

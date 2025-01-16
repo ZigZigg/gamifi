@@ -25,7 +25,7 @@ export class CampaignService {
         const campaign = await this.campaignRepository.findOne({
             where: { status: CampaignStatus.ACTIVE },
         });
-        if (campaign) {
+        if (campaign && body.status === CampaignStatus.ACTIVE) {
             throw new ApiError(CampaignError.ALREADY_EXISTS_CAMPAIGN)
         }
 
@@ -39,24 +39,42 @@ export class CampaignService {
             if(!masterDataGoodLuck) {
                 throw new ApiError(CampaignError.DEFAULT_MASTER_DATA_NOT_FOUND)
             }
+            const createReward = async (rewardObject: Partial<Rewards>, type: TurnType, turnTypeId?: number) => {
+                const rewardData = {
+                    ...rewardObject,
+                    type,
+                };
+                if (turnTypeId) {
+                    rewardData.turnType = turnTypeId as any;
+                }
+                await transactionalEntityManager.save(Rewards, rewardData);
+            };
+
             const goodLuckRewardObject = {
                 campaign: campaign.id as any,
-                turnType: masterDataGoodLuck.id  as any,
+                turnType: masterDataGoodLuck.id as any,
                 value: "0",
                 quantity: 1000000,
                 holdQuantity: 0,
                 winningRate: 100,
                 initialWinningRate: 100,
                 winningType: RewardWinningType.NOLUCK
-            }
-            await transactionalEntityManager.save(Rewards, {
-                ...goodLuckRewardObject,
-                type: TurnType.FREE,
-            });
-            await transactionalEntityManager.save(Rewards, {
-                ...goodLuckRewardObject,
-                type: TurnType.PAID,
-            });
+            };
+
+            const deviceObject = {
+                campaign: campaign.id as any,
+                value: "0",
+                quantity: 1000000,
+                holdQuantity: 0,
+                winningRate: 0,
+                initialWinningRate: 0,
+                winningType: RewardWinningType.PREMIUM
+            };
+
+            await createReward(goodLuckRewardObject, TurnType.FREE);
+            await createReward(goodLuckRewardObject, TurnType.PAID);
+            await createReward(deviceObject, TurnType.PAID, 11);
+            await createReward(deviceObject, TurnType.PAID, 12);
             return campaign;
         })
         return result;

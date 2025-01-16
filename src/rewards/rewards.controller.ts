@@ -3,7 +3,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ApiResult } from 'src/common/classes/api-result';
 import { RewardsService } from './services/rewards.service';
-import { RewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
+import { CraftRewardRequestDto, RewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { TokenUserInfo } from 'src/auth/dtos';
 
@@ -33,6 +33,21 @@ export class RewardsController {
     @UsePipes(new ValidationPipe({ transform: true }))
     async spinReward(@Body() body: SpinRewardRequestDto, @CurrentUser() currentUser: TokenUserInfo) {
         const result = await this.rewardsService.handleProcessSpinReward(body, currentUser);
+        return new ApiResult().success(result);
+    }
+
+    @Post('/craftRewards')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async craftRewards(@Body() body: CraftRewardRequestDto, @CurrentUser() currentUser: TokenUserInfo) {
+        const {rewardIds} = body
+        const result = await this.rewardsService.craftReward(rewardIds, currentUser);
+        return new ApiResult().success(result);
+    }
+
+    @Post('/getRewardsStock')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async getRewardsStock() {
+        const result = await this.rewardsService.getRewardStocks()
         return new ApiResult().success(result);
     }
 }
