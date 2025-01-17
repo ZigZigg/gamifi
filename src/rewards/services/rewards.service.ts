@@ -17,6 +17,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from 'src/common/services/config.service';
 import { CommonService } from 'src/common/services/common.service';
 import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.service';
+import { MpointService } from 'src/auth/services/mpoint.service';
 
 @Injectable()
 export class RewardsService {
@@ -27,12 +28,11 @@ export class RewardsService {
         private readonly campaignRepository: Repository<Campaign>,
         @InjectRepository(Rewards, AppConfig.DB)
         private readonly rewardRepository: Repository<Rewards>,
-        @InjectRepository(RewardHistory, AppConfig.DB)
-        private readonly rewardHistoryRepository: Repository<RewardHistory>,
         @InjectRepository(MasterData, AppConfig.DB)
         private readonly masterRepository: Repository<MasterData>,
         private readonly redis: RedisClientService,
         private readonly mmbfService: MmbfService,
+        private readonly mpointService: MpointService,
         private readonly eventEmitter: EventEmitter2,
         private readonly configService: ConfigService,
         private readonly rewardHistoryService: RewardHistoryService
@@ -152,6 +152,19 @@ export class RewardsService {
             const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
 
             await this.entityManager.transaction(async (transactionalEntityManager) => {
+
+                // Start session game mmbf and send result
+
+                if(this.configService.thirdPartyApi.enableRegisterMmbf === 'true'){
+                    const resultGameSession = await this.mmbfService.registerGameSession({tokenSso, phone: user.phoneNumber, ctkmId, rewardId: winningReward.id});
+                    const totalPoint = Number(winningReward.value) || 0;
+                    await this.mmbfService.updateGameResult({sessionId: resultGameSession.sessionId, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
+                }
+
+                if(['MP_SCORE', 'VOUCHER_MP'].includes(winningReward.turnType.value)){
+                    await this.mpointService.sendRewardMP(user.phoneNumber, winningReward);
+                }
+                
                 const updatedRewardResult = await transactionalEntityManager.createQueryBuilder()
                 .update(Rewards)
                 .set({ quantity: () => 'quantity - 1' })
@@ -167,14 +180,6 @@ export class RewardsService {
                     winningReward,
                     campaign.id
                 );
-
-                // Start session game mmbf and send result
-
-                if(this.configService.thirdPartyApi.enableRegisterMmbf === 'true'){
-                    const resultGameSession = await this.mmbfService.registerGameSession({tokenSso, phone: user.phoneNumber, ctkmId, rewardId: winningReward.id});
-                    const totalPoint = Number(winningReward.value) || 0;
-                    await this.mmbfService.updateGameResult({sessionId: resultGameSession.sessionId, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
-                }
 
                 // Save reward history
                 await transactionalEntityManager.save(RewardHistory, {
@@ -298,7 +303,6 @@ export class RewardsService {
         if (!rewards || rewards.length === 0) {
             throw new ApiError(RewardError.REWARDS_EMPTY);
         }
-        
         const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()) , 0);
 
         if (totalRating <= 0) {

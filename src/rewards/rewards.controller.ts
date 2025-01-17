@@ -44,7 +44,7 @@ export class RewardsController {
         return new ApiResult().success(result);
     }
 
-    @Post('/getRewardsStock')
+    @Get('/getRewardsStock')
     @UsePipes(new ValidationPipe({ transform: true }))
     async getRewardsStock() {
         const result = await this.rewardsService.getRewardStocks()

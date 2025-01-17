@@ -14,6 +14,7 @@ import {
 import { ApiError } from 'src/common/classes/api-error';
 import { MmbfService } from './mmbf.service';
 import { JwtService } from '@nestjs/jwt';
+import { MpointService } from './mpoint.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
 
     private readonly userService: UserService,
     private readonly mmbfService: MmbfService,
+    private readonly mpointService: MpointService,
     private jwtService: JwtService,
   ) {}
 
@@ -46,6 +48,10 @@ export class AuthService {
       const {phone, sub_id, fullname} = accountMmbf
       // TODO: Register MP account
 
+      const resultMp = await this.mpointService.getMypointAccount(phone);
+      if(!resultMp){
+        throw new ApiError('Register Mypoint account failed');
+      }
       // Start create new account
       const existUser = await this.userService.getUserByField([
         {
