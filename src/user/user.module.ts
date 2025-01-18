@@ -40,7 +40,6 @@ import { UserSchedule } from './user.schedule';
     AccountService,
     MasterService,
     JwtStrategy,
-    UserSchedule,
   ],
   controllers: [UserController],
   exports: [UserService, AccountService, MasterService],

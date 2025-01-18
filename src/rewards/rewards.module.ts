@@ -13,13 +13,17 @@ import { MmbfService } from 'src/auth/services/mmbf.service';
 import { MpointService } from 'src/auth/services/mpoint.service';
 import { RewardsListener } from './rewards.listener';
 import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.service';
+import { RewardsSchedule } from './rewards.schedule';
+import { ScheduleModule } from '@nestjs/schedule';
+import { MasterService } from './services/master.service';
 
 // create module
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
         TypeOrmModule.forFeature([Campaign, Rewards, MasterData, RewardHistory], AppConfig.DB)
     ],
-    providers: [RewardsService, MmbfService, MpointService, RewardsListener, RewardHistoryService],
+    providers: [RewardsService, MmbfService, MpointService, RewardsListener, RewardHistoryService, RewardsSchedule, MasterService],
     controllers: [RewardsController],
 })
 export class RewardsModule {}

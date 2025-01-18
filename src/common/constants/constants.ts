@@ -1,4 +1,5 @@
 import { text } from 'stream/consumers';
+const oneHour = 60 * 60;
 
 export const AppConfig = {
   DB: 'DB_TWO',
@@ -31,6 +32,7 @@ export const AppConfig = {
     },
     BLOCK_SESSION: 15 * 60, // Second
   },
+  REDIS_TTL: oneHour * 24
 };
 
 export enum SortDirection {
@@ -233,3 +235,8 @@ export const FullCraftReward = [
     type: 'IPHONE_DEVICE',
   },
 ]
+
+export const REDIS_KEY = {
+  MASTER_DATA_LIST: 'MASTER_DATA_LIST',
+  REWARD_CURRENT_STOCK_LIST: 'REWARD_CURRENT_STOCK_LIST',
+}

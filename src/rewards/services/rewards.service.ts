@@ -1,6 +1,6 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { AppConfig, ConditionTurnType, FullCraftReward, RewardMappingType } from 'src/common/constants/constants';
+import { AppConfig, ConditionTurnType, FullCraftReward, REDIS_KEY, RewardMappingType } from 'src/common/constants/constants';
 import { EntityManager, In, Not, Repository } from 'typeorm';
 import { Campaign, CampaignStatus } from 'src/database/models/campaign.entity';
 import { ApiError } from 'src/common/classes/api-error';
@@ -18,9 +18,12 @@ import { ConfigService } from 'src/common/services/config.service';
 import { CommonService } from 'src/common/services/common.service';
 import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.service';
 import { MpointService } from 'src/auth/services/mpoint.service';
+import { MasterService } from './master.service';
 
 @Injectable()
 export class RewardsService {
+        private readonly logger = new Logger(this.constructor.name);
+    
     constructor(
         @InjectEntityManager(AppConfig.DB)
         private readonly entityManager: EntityManager,
@@ -35,6 +38,7 @@ export class RewardsService {
         private readonly mpointService: MpointService,
         private readonly eventEmitter: EventEmitter2,
         private readonly configService: ConfigService,
+        private readonly masterDataService: MasterService,
         private readonly rewardHistoryService: RewardHistoryService
     ) {}
 
@@ -145,9 +149,20 @@ export class RewardsService {
                 throw new ApiError(RewardError.REWARDS_EMPTY)
             }
 
-            const winningReward = this.handleSpinReward(rewards);
+            let winningReward = this.handleSpinReward(rewards);
             if(!winningReward){
                 throw new ApiError(RewardError.REWARD_NOT_FOUND)
+            }
+            console.log("🚀 ~ RewardsService ~ handleProcessSpinReward ~ winningReward:", winningReward)
+
+            const checkIfRewardReachLimit = await this.checkIfRewardReachLimit(winningReward);
+            if(checkIfRewardReachLimit){
+                this.logger.log('Reward reach limit with 20% of quantity, reward ID: ' + winningReward.id)
+
+                const goodLuckReward = rewards.find(item => item.turnType.value === 'GOOD_LUCK');
+                if(goodLuckReward){
+                    winningReward = goodLuckReward;
+                }
             }
             const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
 
@@ -322,6 +337,25 @@ export class RewardsService {
         throw new ApiError(RewardError.REWARD_NOT_FOUND);
     }
 
+    async checkIfRewardReachLimit(winningReward: Rewards){
+        const rewardStockToday: any = await this.redis.get(REDIS_KEY.REWARD_CURRENT_STOCK_LIST);
+        if(!rewardStockToday?.length){
+            return false
+        }
+        const currentRewardWithStockToday = rewardStockToday.find((item: any) => item.id === winningReward.id);
+        if(!currentRewardWithStockToday || currentRewardWithStockToday.quantity < 5){
+            return false
+        }
+        const {quantity} = currentRewardWithStockToday
+        // get 20% of quantity
+        const limitQuantity = Math.floor(Number(quantity) * 0.2);
+        const remainingQuantity = Number(quantity) - Number(winningReward.quantity);
+        if(remainingQuantity >= limitQuantity){
+            return true
+        }
+        return false
+    }
+
     checkWinningTurnType(totalTurn: number): RewardWinningType | null{
         const currentTurn = totalTurn + 1;
         if(currentTurn === 1){
@@ -334,5 +368,37 @@ export class RewardsService {
             return RewardWinningType.MID
         }
         return null;
+    }
+
+    async saveCurrentStockToday(){
+        try {
+            // Get list rewards from cached
+            const masterData: any = await this.masterDataService.getMasterDataFromCache();
+            const goodLuckData = masterData.find(item => item.value === 'GOOD_LUCK');
+
+            // Get Active camapign
+            const campaign = await this.campaignRepository.findOne({
+                where: { status: CampaignStatus.ACTIVE },
+            });
+            if(!campaign) {
+                this.logger.error('Campaign not found')
+                return
+            }
+            // Get all rewards of this campaign, except good luck
+            const rewards = await this.rewardRepository.find({
+                where: { campaign: { id: campaign.id }, turnType: { id: Not(goodLuckData.id) } },
+                relations: ['turnType']
+            });
+            const rewardCurrentStock = rewards.map((reward) => {
+                return {
+                    id: reward.id,
+                    quantity: Number(reward.quantity)
+                }
+            })
+            this.redis.set(REDIS_KEY.REWARD_CURRENT_STOCK_LIST, rewardCurrentStock, AppConfig.REDIS_TTL);
+        } catch (error) {
+            this.logger.error('Error when saveCurrentStockToday', error)
+        }
+        
     }
 }
