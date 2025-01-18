@@ -221,8 +221,8 @@ export const RewardMappingType = [
 ]
 
 export const ConditionTurnType = {
-  FREE: [1, 3, 13, 5],
-  PAID: [6, 18]
+  FREE: [1],
+  PAID: [2]
 }
 
 export const FullCraftReward = [
