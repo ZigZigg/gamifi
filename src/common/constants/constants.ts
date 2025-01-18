@@ -225,6 +225,15 @@ export const ConditionTurnType = {
   PAID: [2]
 }
 
+export const TurnTypeMapping = {
+  1: 1,
+  3: 1,
+  13: 1,
+  5: 1,
+  6: 2,
+  18: 2
+}
+
 export const FullCraftReward = [
   {
     craftString: 'AIRPOD_PIECE_1_AIRPOD_PIECE_2_AIRPOD_PIECE_3',

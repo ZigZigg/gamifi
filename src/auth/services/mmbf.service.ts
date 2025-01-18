@@ -7,6 +7,7 @@ import { ConfigService } from "src/common/services/config.service";
 import * as crypt from 'crypto';
 import { GetTotalTurnMMBFDto } from "../dtos";
 import { start } from "repl";
+import { TurnTypeMapping } from "src/common/constants/constants";
 const axios = Axios.default;
 
 @Injectable()
@@ -77,13 +78,25 @@ export class MmbfService {
         }
         const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/sso/get-total-turn`, payload, options);
         const {data} = response.data;
+        const {list_turn} = data
+        const currentData = {...data}
+        if(list_turn?.length){
+          const currentListTurn = list_turn.map((item: any) => {
+            return {
+              ...item,
+              type: TurnTypeMapping[item.type]
+            }
+          })
+          currentData.list_turn = currentListTurn
+        }
+
         if(!data){
           const error = response.data?.errors[0]
           if(error){
             throw new ApiError(error.message || 'Get total turn failed')
           }
         }
-        return  data
+        return  currentData
     } catch (error) {
         throw new ApiError(error || AuthError.GET_MMBF_TOTAL_TURN_FAILED)
     }
