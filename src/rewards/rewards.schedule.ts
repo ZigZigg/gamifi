@@ -11,12 +11,16 @@ export class RewardsSchedule {
 
     }
 
-
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async checkCurrentStockToday() {
     this.logger.log('▷▷▷ RUN CHECK AND SAVE CURRENT STOCK TODAY!');
     this.rewardsService.saveCurrentStockToday()
   }
 
+  @Cron(CronExpression.EVERY_HOUR)
+  checkHoldStock(){
+    this.logger.log('▷▷▷ RUN CHECK HOLD STOCK!');
+    this.rewardsService.checkHoldStock()
+  }
 
 }

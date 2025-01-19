@@ -401,4 +401,47 @@ export class RewardsService {
         }
         
     }
+
+    async checkHoldStock(){
+        try {
+            // Get current Active campaign
+            const campaign = await this.campaignRepository.findOne({
+                where: { status: CampaignStatus.ACTIVE },
+            });
+            if(!campaign) {
+                this.logger.error('Campaign not found')
+                return
+            }
+            const {startDateHold, endDateHold} = campaign
+            const checkIfValidHoldDate = this.checkValiHolddDate(startDateHold, endDateHold);
+            if(!checkIfValidHoldDate){
+                this.logger.error('Invalid hold date')
+                return
+            }
+            await this.rewardRepository.update(
+                { campaign: { id: campaign.id } },
+                { winningRate: () => 'initialWinningRate' }
+            );
+            // Check if start
+        } catch (error) {
+            this.logger.error('Error when checkHoldStock', error)
+        }
+    }
+
+    checkValiHolddDate(startDate: Date, endDate: Date){
+        // Check valid date should be: 
+        // startDate should less than endDate
+        // startDate should less than current date and endDate should greater than current date
+
+        const currentDate = new Date().toISOString();
+        console.log("🚀 ~ RewardsService ~ checkValiHolddDate ~ currentDate:", currentDate, new Date(currentDate), new Date(startDate))
+        if(new Date(startDate) > new Date(endDate)){
+            return false
+        }
+
+        if(new Date(startDate) > new Date(currentDate) || new Date(endDate) < new Date(currentDate)){
+            return false
+        }
+        return true
+    }
 }
