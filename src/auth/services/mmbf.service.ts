@@ -110,7 +110,7 @@ export class MmbfService {
     const encodedAuthString = Buffer.from(authString).toString('base64');
     const options = {
       headers: {
-        Authorization: `Basic ${encodedAuthString}`,
+        Authorization: `Bearer ${encodedAuthString}`,
       },
     }
 
@@ -137,7 +137,7 @@ export class MmbfService {
     const encodedAuthString = Buffer.from(authString).toString('base64');
     const options = {
       headers: {
-        Authorization: `Basic ${encodedAuthString}`,
+        Authorization: `Bearer ${encodedAuthString}`,
       },
     }
     const time = Date.now().toString();
