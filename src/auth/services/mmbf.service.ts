@@ -106,15 +106,13 @@ export class MmbfService {
     const {tokenSso, phone, ctkmId, rewardId} = payloadRequest
     this.logger.log(`Register game session with phone: ${phone}, ctkmId: ${ctkmId} and rewardId: ${rewardId}`)
 
-    const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPass}`;
+    const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPassUpdate}`;
     const encodedAuthString = Buffer.from(authString).toString('base64');
-    console.log("🚀 ~ MmbfService ~ registerGameSession ~ encodedAuthString:", encodedAuthString)
     const options = {
       headers: {
         Authorization: `Bearer ${encodedAuthString}`,
       },
     }
-    console.log("🚀 ~ MmbfService ~ registerGameSession ~ options:", options)
 
     const payload = {
         token: tokenSso,
@@ -135,7 +133,7 @@ export class MmbfService {
   async updateGameResult(payloadRequest: MmbfUpdateGameResultRequest){
     const {sessionId, totalPoint, point, ctkmId, rewardId} = payloadRequest
     this.logger.log(`Update game result with sessionId: ${sessionId}, ctkmId: ${ctkmId}, point: ${point}, totalPoint: ${totalPoint} and rewardId: ${rewardId}`)
-    const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPass}`;
+    const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPassUpdate}`;
     const encodedAuthString = Buffer.from(authString).toString('base64');
     const options = {
       headers: {
