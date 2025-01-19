@@ -108,11 +108,13 @@ export class MmbfService {
 
     const authString = `${this.configService.thirdPartyApi.mmbfUser}:${this.configService.thirdPartyApi.mmmbfPassUpdate}`;
     const encodedAuthString = Buffer.from(authString).toString('base64');
+    console.log("🚀 ~ MmbfService ~ registerGameSession ~ authString:", authString)
     const options = {
       headers: {
         Authorization: `Bearer ${encodedAuthString}`,
       },
     }
+    console.log("🚀 ~ MmbfService ~ registerGameSession ~ options:", options)
 
     const payload = {
         token: tokenSso,
