@@ -27,10 +27,15 @@ export class MmbfService {
   }
 
   createChecksumResultUpdate(payloadRequest: MmbfUpdateGameResultRequest, time: string){
+    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ time:", time)
+    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ payloadRequest:", payloadRequest)
     const {sessionId, totalPoint, point, ctkmId} = payloadRequest
-    const password = this.configService.thirdPartyApi.mmmbfPass;
+    const password = this.configService.thirdPartyApi.mmmbfPassUpdate;
+    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ password:", password)
 
-    const dataToHash = `${sessionId}${ctkmId}${time}${time}${point}${totalPoint}${password}`;
+    const dataToHash = `${sessionId}|${ctkmId}|${time}|${time}|${point}|${totalPoint}|${password}`;
+    
+    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ dataToHash:", dataToHash)
     const checksum = crypt.createHash('sha256').update(dataToHash).digest('hex');
     return checksum;
   }
