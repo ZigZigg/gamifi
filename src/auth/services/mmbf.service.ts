@@ -8,6 +8,7 @@ import * as crypt from 'crypto';
 import { GetTotalTurnMMBFDto } from "../dtos";
 import { start } from "repl";
 import { TurnTypeMapping } from "src/common/constants/constants";
+import * as moment from "moment";
 const axios = Axios.default;
 
 @Injectable()
@@ -31,7 +32,6 @@ export class MmbfService {
     console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ payloadRequest:", payloadRequest)
     const {sessionId, totalPoint, point, ctkmId} = payloadRequest
     const password = this.configService.thirdPartyApi.mmmbfPassUpdate;
-    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ password:", password)
 
     const dataToHash = `${sessionId}|${ctkmId}|${time}|${time}|${point}|${totalPoint}|${password}`;
     
@@ -149,8 +149,7 @@ export class MmbfService {
         Authorization: `Bearer ${encodedAuthString}`,
       },
     }
-    const time = Date.now().toString();
-
+    const time = moment().format('HH:mm:ss DD/MM/YYYY');
     const checksum = this.createChecksumResultUpdate(payloadRequest, time);
     const payload = {
         session_id: sessionId,
