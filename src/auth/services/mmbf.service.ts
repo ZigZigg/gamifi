@@ -123,6 +123,7 @@ export class MmbfService {
     }
     const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/register-session`, payload, options);
     const {data} = response.data;
+    console.log("🚀 ~ MmbfService ~ registerGameSession ~ data:", data)
     if(!data){
       const error = response.data?.errors[0]
       if(error){
@@ -133,6 +134,7 @@ export class MmbfService {
   }
 
   async updateGameResult(payloadRequest: MmbfUpdateGameResultRequest){
+    console.log("🚀 ~ MmbfService ~ updateGameResult ~ payloadRequest:", payloadRequest)
     const {sessionId, totalPoint, point, ctkmId, rewardId} = payloadRequest
     this.logger.log(`Update game result with sessionId: ${sessionId}, ctkmId: ${ctkmId}, point: ${point}, totalPoint: ${totalPoint} and rewardId: ${rewardId}`)
     const authString = `${this.configService.thirdPartyApi.mmbfUserUpdate}:${this.configService.thirdPartyApi.mmmbfPassUpdate}`;
@@ -154,6 +156,7 @@ export class MmbfService {
         end_time: time,
         checksum
     }
+    console.log("🚀 ~ MmbfService ~ updateGameResult ~ payload:", payload)
     const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/update-sessionid-result`, payload, options);
 
     const {data} = response.data;
