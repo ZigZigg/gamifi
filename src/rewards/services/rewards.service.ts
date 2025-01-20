@@ -204,7 +204,7 @@ export class RewardsService {
                 if(this.configService.thirdPartyApi.enableRegisterMmbf === 'true'){
                     const resultGameSession = await this.mmbfService.registerGameSession({tokenSso, phone: user.phoneNumber, ctkmId, rewardId: winningReward.id});
                     const totalPoint = Number(winningReward.value) || 0;
-                    await this.mmbfService.updateGameResult({sessionId: resultGameSession.sessionId, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
+                    await this.mmbfService.updateGameResult({sessionId: resultGameSession, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
                 }
 
                 if(['MP_SCORE', 'VOUCHER_MP'].includes(winningReward.turnType.value)){
