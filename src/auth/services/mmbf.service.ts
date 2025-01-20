@@ -154,7 +154,7 @@ export class MmbfService {
         total_point: totalPoint,
         start_time: time,
         end_time: time,
-        checksum
+        checkSum: checksum,
     }
     console.log("🚀 ~ MmbfService ~ updateGameResult ~ payload:", payload)
     const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/update-sessionid-result`, payload, options);
