@@ -33,6 +33,8 @@ export class RewardsService {
         private readonly rewardRepository: Repository<Rewards>,
         @InjectRepository(MasterData, AppConfig.DB)
         private readonly masterRepository: Repository<MasterData>,
+        @InjectRepository(RewardHistory, AppConfig.DB)
+        private readonly rewardHistoryRepository: Repository<RewardHistory>,
         private readonly redis: RedisClientService,
         private readonly mmbfService: MmbfService,
         private readonly mpointService: MpointService,
@@ -184,11 +186,12 @@ export class RewardsService {
             if(!winningReward){
                 throw new ApiError(RewardError.REWARD_NOT_FOUND)
             }
-            console.log("🚀 ~ RewardsService ~ handleProcessSpinReward ~ winningReward:", winningReward)
 
             const checkIfRewardReachLimit = await this.checkIfRewardReachLimit(winningReward);
-            if(checkIfRewardReachLimit){
-                this.logger.log('Reward reach limit with 20% of quantity, reward ID: ' + winningReward.id)
+            const checkIfCraftRewardAlreadyReceived = await this.checkIfCraftRewardAlreadyReceived(winningReward, user);
+
+            if(checkIfRewardReachLimit || checkIfCraftRewardAlreadyReceived){
+                this.logger.error('Reward reach limit or reward craft already received')
 
                 const goodLuckReward = rewards.find(item => item.turnType.value === 'GOOD_LUCK');
                 if(goodLuckReward){
@@ -349,6 +352,7 @@ export class RewardsService {
         if (!rewards || rewards.length === 0) {
             throw new ApiError(RewardError.REWARDS_EMPTY);
         }
+
         const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()) , 0);
 
         if (totalRating <= 0) {
@@ -465,7 +469,6 @@ export class RewardsService {
         // startDate should less than current date and endDate should greater than current date
 
         const currentDate = new Date().toISOString();
-        console.log("🚀 ~ RewardsService ~ checkValiHolddDate ~ currentDate:", currentDate, new Date(currentDate), new Date(startDate))
         if(new Date(startDate) > new Date(endDate)){
             return false
         }
@@ -474,5 +477,21 @@ export class RewardsService {
             return false
         }
         return true
+    }
+
+    async checkIfCraftRewardAlreadyReceived(winningReward: Rewards, currentUser: TokenUserInfo){
+        const rewardHistory = await this.rewardHistoryRepository.find({
+            where: { user: { id: currentUser.id } },
+            relations: ['reward', 'reward.turnType']
+        });
+        const iphoneReward = rewardHistory.find(item => item.reward.turnType.value === 'IPHONE_DEVICE');
+        if(iphoneReward && ['IP_PIECE_1', 'IP_PIECE_2', 'IP_PIECE_3'].includes(winningReward.turnType.value)){
+            return true
+        } 
+        const airpodReward = rewardHistory.find(item => item.reward.turnType.value === 'AIRPOD_DEVICE');
+        if(airpodReward && ['AIRPOD_PIECE_1', 'AIRPOD_PIECE_2', 'AIRPOD_PIECE_3'].includes(winningReward.turnType.value)){
+            return true
+        }
+        return false
     }
 }

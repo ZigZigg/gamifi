@@ -28,14 +28,11 @@ export class MmbfService {
   }
 
   createChecksumResultUpdate(payloadRequest: MmbfUpdateGameResultRequest, time: string){
-    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ time:", time)
-    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ payloadRequest:", payloadRequest)
     const {sessionId, totalPoint, point, ctkmId} = payloadRequest
     const password = this.configService.thirdPartyApi.mmmbfPassUpdate;
 
     const dataToHash = `${sessionId}|${ctkmId}|${time}|${time}|${time}|${point}|${totalPoint}|${password}`;
     
-    console.log("🚀 ~ MmbfService ~ createChecksumResultUpdate ~ dataToHash:", dataToHash)
     const checksum = crypt.createHash('sha256').update(dataToHash).digest('hex');
     return checksum;
   }
@@ -113,13 +110,11 @@ export class MmbfService {
 
     const authString = `${this.configService.thirdPartyApi.mmbfUserUpdate}:${this.configService.thirdPartyApi.mmmbfPassUpdate}`;
     const encodedAuthString = Buffer.from(authString).toString('base64');
-    console.log("🚀 ~ MmbfService ~ registerGameSession ~ authString:", authString)
     const options = {
       headers: {
         Authorization: `Bearer ${encodedAuthString}`,
       },
     }
-    console.log("🚀 ~ MmbfService ~ registerGameSession ~ options:", options)
 
     const payload = {
         token: tokenSso,
@@ -128,7 +123,6 @@ export class MmbfService {
     }
     const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/register-session`, payload, options);
     const {data} = response.data;
-    console.log("🚀 ~ MmbfService ~ registerGameSession ~ data:", data)
     if(!data){
       const error = response.data?.errors[0]
       if(error){
@@ -139,7 +133,6 @@ export class MmbfService {
   }
 
   async updateGameResult(payloadRequest: MmbfUpdateGameResultRequest){
-    console.log("🚀 ~ MmbfService ~ updateGameResult ~ payloadRequest:", payloadRequest)
     const {sessionId, totalPoint, point, ctkmId, rewardId} = payloadRequest
     this.logger.log(`Update game result with sessionId: ${sessionId}, ctkmId: ${ctkmId}, point: ${point}, totalPoint: ${totalPoint} and rewardId: ${rewardId}`)
     const authString = `${this.configService.thirdPartyApi.mmbfUserUpdate}:${this.configService.thirdPartyApi.mmmbfPassUpdate}`;
@@ -161,7 +154,6 @@ export class MmbfService {
         time,
         checkSum: checksum,
     }
-    console.log("🚀 ~ MmbfService ~ updateGameResult ~ payload:", payload)
     const response = await axios.post(`${this.configService.thirdPartyApi.mmbfUrl}/api/ctkm/update-sessionid-result`, payload, options);
 
     const {data} = response.data;
