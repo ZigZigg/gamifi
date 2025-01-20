@@ -4,9 +4,9 @@ import { AppConfig, ConditionTurnType, FullCraftReward, REDIS_KEY, RewardMapping
 import { EntityManager, In, Not, Repository } from 'typeorm';
 import { Campaign, CampaignStatus } from 'src/database/models/campaign.entity';
 import { ApiError } from 'src/common/classes/api-error';
-import { Rewards, RewardWinningType, TurnType } from 'src/database/models/rewards.entity';
+import { Rewards, RewardStatus, RewardWinningType, TurnType } from 'src/database/models/rewards.entity';
 import { MasterData } from 'src/database/models/master-data.entity';
-import { RewardRequestDto, SpinRewardRequestDto } from '../dtos/request/reward.request.dto';
+import { RewardRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from '../dtos/request/reward.request.dto';
 import { RewardError } from '../constants/errors';
 import { TokenUserInfo } from 'src/auth/dtos';
 import { RewardHistory } from 'src/database/models/reward-history.entity';
@@ -42,9 +42,38 @@ export class RewardsService {
         private readonly rewardHistoryService: RewardHistoryService
     ) {}
 
-    async findAll() {
-        const rewards = await this.rewardRepository.find();
-        return rewards;
+    async getList(params: SearchRewardRequestDto, user?: TokenUserInfo) {
+        const {limit, offset, type} =params
+        // get active campaign
+        const campaign = await this.campaignRepository.findOne({
+            where: { status: CampaignStatus.ACTIVE },
+        });
+        if(!campaign) {
+            throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
+        }
+        let queryBuilder = this.rewardRepository.createQueryBuilder('rw')
+        .select('rw.*, CAST(rw."winning_rate" as float),  CAST(rw."initial_winning_rate" as float), CAST(rw."quantity" as int), CAST(rw."initial_quantity" as int)')
+        .where('rw."campaignId" = :campaignId', {campaignId: campaign.id})
+        .andWhere('rw."type" = :type', {type})
+
+        // Get turn type object
+        queryBuilder.leftJoin(
+            MasterData,
+            'md',
+            `md."id" = rw."turnTypeId"`,
+          )
+          .addSelect(
+            ` json_build_object('id', md.id, 'name', md."name", 'value', md.value) as turnType`,
+          );
+          queryBuilder.orderBy('id', 'ASC').limit(limit).offset(offset);
+          const [results, count] = await Promise.all([
+            queryBuilder.getRawMany(),
+            queryBuilder.getCount(),
+          ]);
+          return {
+            records: results,
+            total: count,
+          };
     }
 
     async create(body: RewardRequestDto) {
@@ -64,7 +93,9 @@ export class RewardsService {
         const result = await this.entityManager.transaction(async (transactionalEntityManager) => {
             const rewardObject = {
                 ...body,
+                status: RewardStatus.ACTIVE,
                 initialWinningRate: winningRate,
+                initialQuantity: body.quantity,
                 campaign: campaignId as any,
                 turnType: body.turnTypeId as any,
             }
@@ -420,7 +451,7 @@ export class RewardsService {
             }
             await this.rewardRepository.update(
                 { campaign: { id: campaign.id } },
-                { winningRate: () => 'initialWinningRate' }
+                { winningRate: () => 'initialWinningRate', status: RewardStatus.ACTIVE }
             );
             // Check if start
         } catch (error) {

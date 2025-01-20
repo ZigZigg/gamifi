@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { BasePageDTO } from "src/common/classes/pagination.dto";
 import { RewardWinningType, TurnType } from "src/database/models/rewards.entity";
 
 export class RewardRequestDto {
@@ -69,6 +70,18 @@ export class SpinRewardRequestDto {
     @IsString()
     @IsNotEmpty()
     readonly ctkmId: string;
+}
+
+export class SearchRewardRequestDto extends BasePageDTO {
+  @ApiProperty({
+    type: 'enum',
+    required: true,
+    enum: TurnType,
+    default: TurnType.FREE,
+  })
+  @IsNotEmpty()
+  @IsEnum(TurnType)
+  type: TurnType;
 }
 
 export class CraftRewardRequestDto {

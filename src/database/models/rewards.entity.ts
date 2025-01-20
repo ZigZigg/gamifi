@@ -8,6 +8,11 @@ export enum TurnType {
   PAID='PAID'
 }
 
+export enum RewardStatus {
+  ACTIVE='ACTIVE',
+  HOLD='HOLD'
+}
+
 export enum RewardWinningType {
   BASIC='BASIC',
   MID='MID',
@@ -26,11 +31,22 @@ export class Rewards {
   @Column()
   value: string;
 
+  @Column({
+    nullable: false,
+    type: 'enum',
+    enum: RewardStatus,
+    default: RewardStatus.ACTIVE,
+  })
+  status: RewardStatus;
+
   @Column({ type: 'bigint', default: 0 })
   quantity: number;
 
   @Column({ type: 'bigint', name: 'hold_quantity', default: 0 })
   holdQuantity: number;
+
+  @Column({ type: 'bigint', name: 'initial_quantity', default: 0 })
+  initialQuantity: number;
 
   @Column({ type: 'numeric', precision: 12, scale: 8, name: 'winning_rate' })
   winningRate: number;

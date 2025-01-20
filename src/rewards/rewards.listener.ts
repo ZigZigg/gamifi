@@ -4,7 +4,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { AppConfig } from "src/common/constants/constants";
 import { Campaign, CampaignStatus } from "src/database/models/campaign.entity";
 import { MasterData } from "src/database/models/master-data.entity";
-import { Rewards } from "src/database/models/rewards.entity";
+import { Rewards, RewardStatus } from "src/database/models/rewards.entity";
 import { EntityManager, Repository } from "typeorm";
 
 @Injectable()
@@ -43,7 +43,8 @@ export class RewardsListener {
     const updatedQuantity = Number(quantity) - 1;
     if (updatedQuantity <= Number(holdQuantity) && parseFloat(winningRate.toString()) > 0 &&  turnType.value !== 'GOOD_LUCK') {
         const updatedWinningReward = {
-          winningRate: 0
+          winningRate: 0,
+          status: RewardStatus.HOLD,
         };
 
         await this.rewardRepository.update({ id }, updatedWinningReward);

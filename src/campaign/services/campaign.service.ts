@@ -6,7 +6,7 @@ import { CampaignRequestDto } from '../dtos/request/campaign.request.dto';
 import { Campaign, CampaignStatus } from 'src/database/models/campaign.entity';
 import { ApiError } from 'src/common/classes/api-error';
 import { CampaignError } from '../constants/errors';
-import { Rewards, RewardWinningType, TurnType } from 'src/database/models/rewards.entity';
+import { Rewards, RewardStatus, RewardWinningType, TurnType } from 'src/database/models/rewards.entity';
 import { MasterData } from 'src/database/models/master-data.entity';
 
 @Injectable()
@@ -55,6 +55,8 @@ export class CampaignService {
                 turnType: masterDataGoodLuck.id as any,
                 value: "0",
                 quantity: 1000000,
+                initialQuantity: 1000000,
+                status: RewardStatus.ACTIVE,
                 holdQuantity: 0,
                 winningRate: 100,
                 initialWinningRate: 100,
@@ -65,6 +67,8 @@ export class CampaignService {
                 campaign: campaign.id as any,
                 value: "0",
                 quantity: 1000000,
+                initialQuantity: 1000000,
+                status: RewardStatus.ACTIVE,
                 holdQuantity: 0,
                 winningRate: 0,
                 initialWinningRate: 0,

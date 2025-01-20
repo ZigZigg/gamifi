@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UsePipes, ValidationPipe, Query } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiResult } from 'src/common/classes/api-result';
 import { RewardsService } from './services/rewards.service';
-import { CraftRewardRequestDto, RewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
+import { CraftRewardRequestDto, RewardRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { TokenUserInfo } from 'src/auth/dtos';
 
@@ -23,9 +23,12 @@ export class RewardsController {
     }
 
     // Get list of rewards
-    @Get()
-    async findAll() {
-        const rewards = await this.rewardsService.findAll();
+    @Get('/')
+    @ApiOperation({
+        summary: 'Get reward list data by custom field',
+      })
+    async getList(@Query() params: SearchRewardRequestDto, @CurrentUser() user) {
+        const rewards = await this.rewardsService.getList(params, user);
         return new ApiResult().success(rewards);
     }
 
