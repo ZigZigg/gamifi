@@ -15,9 +15,14 @@ export class CampaignController {
 
     @Post()
     @UsePipes(new ValidationPipe({ transform: true }))
-
     async create(@Body() body: CampaignRequestDto) {
         const campaign = await this.campaignService.create(body);
+        return new ApiResult().success(campaign);
+    }
+
+    @Get('/getActiveCampaign')
+    async getActiveCampaign() {
+        const campaign = await this.campaignService.getCurrentActiveCampaign();
         return new ApiResult().success(campaign);
     }
 }

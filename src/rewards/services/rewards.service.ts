@@ -6,7 +6,7 @@ import { Campaign, CampaignStatus } from 'src/database/models/campaign.entity';
 import { ApiError } from 'src/common/classes/api-error';
 import { Rewards, RewardStatus, RewardWinningType, TurnType } from 'src/database/models/rewards.entity';
 import { MasterData } from 'src/database/models/master-data.entity';
-import { RewardRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from '../dtos/request/reward.request.dto';
+import { RewardRequestDto, RewardUpdateRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from '../dtos/request/reward.request.dto';
 import { RewardError } from '../constants/errors';
 import { TokenUserInfo } from 'src/auth/dtos';
 import { RewardHistory } from 'src/database/models/reward-history.entity';
@@ -78,17 +78,106 @@ export class RewardsService {
           };
     }
 
-    async create(body: RewardRequestDto) {
-        const {campaignId, winningRate, type} = body
+    async delete(id: string) {
+        const reward = await this.rewardRepository.findOne({
+            where: { id: parseInt(id) },
+        });
+        if (!reward) {
+            throw new ApiError(RewardError.REWARD_NOT_FOUND)
+        }
+        const result = await this.entityManager.transaction(async (transactionalEntityManager) => {
+            const deleteResult = await this.rewardRepository.delete({ id: parseInt(id) });
+            const masterDataGoodLuck = await this.masterRepository.findOne({
+                where: { value: 'GOOD_LUCK' },
+            })
+    
+            // Get active campaign
+            const campaign = await this.campaignRepository.findOne({
+                where: { status: CampaignStatus.ACTIVE },
+            });
+            if(!campaign) {
+                throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
+            }
+    
+            const goodLuckReward = await this.rewardRepository.findOne({
+                where: { campaign: { id: campaign.id }, type: reward.type, turnType: { id: masterDataGoodLuck.id } }
+            })
+            if(goodLuckReward) {
+                const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) + parseFloat(reward.winningRate.toString());
+                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: currentGoodLuckRate});
+            }
+            return deleteResult;
+            
+        })
+
+        return result;
+    }
+
+    async update(id: string, body: RewardUpdateRequestDto) {
+        const {campaign, winningRate, type} = body
+        // Check if reward exist
+        const reward = await this.rewardRepository.findOne({
+            where: { id: parseInt(id) },
+        });
+        if (!reward) {
+            throw new ApiError(RewardError.REWARD_NOT_FOUND)
+        }
         // Find campaign by id
-        const campaign = await this.campaignRepository.findOne({            
-            where: { id: campaignId },
+        const campaignObject = await this.campaignRepository.findOne({            
+            where: { id: campaign },
         });
         // If campaign not found, return error
-        if (!campaign) {
+        if (!campaignObject) {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
-        const validate = await this.validateRating(campaignId, winningRate, type);
+        const validate = await this.validateRating(campaign, winningRate, type);
+        if(!validate) {
+            throw new ApiError(RewardError.UPDATE_REWARD_FAILED)
+        }
+        const result = await this.entityManager.transaction(async (transactionalEntityManager) => {
+            const rewardObject = {
+                holdQuantity: body.holdQuantity,
+                quantity: body.quantity,
+                type: body.type as any,
+                value: body.value,
+                winningRate: body.winningRate,
+                campaign: campaign as any,
+                turnType: body.turnTypeId as any,
+            }
+
+            const rewardResult = await transactionalEntityManager.update(Rewards, {id: parseInt(id)}, rewardObject);
+            const masterDataGoodLuck = await this.masterRepository.findOne({
+                where: { value: 'GOOD_LUCK' },
+            })
+
+            const goodLuckReward = await this.rewardRepository.findOne({
+                where: { campaign: { id: campaign }, type, turnType: { id: masterDataGoodLuck.id } }
+            })
+            if(goodLuckReward) {
+                const formatDiffRate = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 12,
+                  }).format(winningRate - parseFloat(reward.winningRate.toString()));
+                const currentDiffRate = parseFloat(formatDiffRate);
+                const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) - currentDiffRate;
+                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: currentGoodLuckRate});
+            }
+            return rewardResult;
+        })
+        return result
+    }
+
+    async create(body: RewardRequestDto) {
+        const {campaign, winningRate, type} = body
+        // Find campaign by id
+        const campaignResult = await this.campaignRepository.findOne({            
+            where: { id: campaign },
+        });
+        // If campaign not found, return error
+        if (!campaignResult) {
+            throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
+        }
+        const validate = await this.validateRating(campaign, winningRate, type);
         if(!validate) {
             throw new ApiError(RewardError.CREATE_REWARD_FAILED)
         }
@@ -98,7 +187,7 @@ export class RewardsService {
                 status: RewardStatus.ACTIVE,
                 initialWinningRate: winningRate,
                 initialQuantity: body.quantity,
-                campaign: campaignId as any,
+                campaign: campaign as any,
                 turnType: body.turnTypeId as any,
             }
             const reward = await transactionalEntityManager.save(Rewards, rewardObject);
@@ -108,7 +197,7 @@ export class RewardsService {
             })
 
             const goodLuckReward = await this.rewardRepository.findOne({
-                where: { campaign: { id: campaignId }, type, turnType: { id: masterDataGoodLuck.id } }
+                where: { campaign: { id: campaign }, type, turnType: { id: masterDataGoodLuck.id } }
             })
             if(goodLuckReward) {
                 const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) - winningRate;

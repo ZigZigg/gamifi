@@ -20,6 +20,12 @@ export class CampaignService {
         private readonly masterRepository: Repository<MasterData>,
     ) {}
 
+    async getCurrentActiveCampaign() {
+        return await this.campaignRepository.findOne({
+            where: { status: CampaignStatus.ACTIVE },
+        });
+    }
+
     async create(body: CampaignRequestDto) {
         // check if campaign which status = active already exist, return error
         const campaign = await this.campaignRepository.findOne({

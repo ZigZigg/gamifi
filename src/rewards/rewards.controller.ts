@@ -1,11 +1,12 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UsePipes, ValidationPipe, Query } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiResult } from 'src/common/classes/api-result';
 import { RewardsService } from './services/rewards.service';
-import { CraftRewardRequestDto, RewardRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
+import { CraftRewardRequestDto, RewardRequestDto, RewardUpdateRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { TokenUserInfo } from 'src/auth/dtos';
+import { MasterService } from './services/master.service';
 
 
 @Controller('rewards')
@@ -13,12 +14,22 @@ import { TokenUserInfo } from 'src/auth/dtos';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class RewardsController {
-    constructor(private readonly rewardsService: RewardsService) {}
+    constructor(
+        private readonly rewardsService: RewardsService,
+        private readonly masterDataService: MasterService
+    ) {}
 
     @Post()
     @UsePipes(new ValidationPipe({ transform: true }))
     async create(@Body() body: RewardRequestDto) {
         const campaign = await this.rewardsService.create(body);
+        return new ApiResult().success(campaign);
+    }
+
+    @Put(':id')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async update(@Param('id') id: string, @Body() body: RewardUpdateRequestDto) {
+        const campaign = await this.rewardsService.update(id, body);
         return new ApiResult().success(campaign);
     }
 
@@ -51,6 +62,23 @@ export class RewardsController {
     @UsePipes(new ValidationPipe({ transform: true }))
     async getRewardsStock() {
         const result = await this.rewardsService.getRewardStocks()
+        return new ApiResult().success(result);
+    }
+
+    @Get('/getMasterData')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async getMasterData() {
+        const result = await this.masterDataService.getMasterDataFromCache()
+        return new ApiResult().success(result);
+    }
+
+    @Delete(':id')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOkResponse({
+        description: 'Delete reward',
+    })
+    async deleteReward(@Param('id') id: string) {
+        const result = await this.rewardsService.delete(id)
         return new ApiResult().success(result);
     }
 }

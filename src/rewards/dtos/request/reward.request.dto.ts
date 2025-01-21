@@ -1,7 +1,55 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { BasePageDTO } from "src/common/classes/pagination.dto";
 import { RewardWinningType, TurnType } from "src/database/models/rewards.entity";
+
+export class RewardUpdateRequestDto {
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    @IsOptional()
+    turnTypeId: number;
+
+    @ApiProperty({
+        type: 'enum',
+        required: true,
+        enum: TurnType,
+        default: TurnType.FREE,
+      })
+    @IsNotEmpty()
+    @IsEnum(TurnType)
+    @IsOptional()
+    type: TurnType;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsString()
+    @IsOptional()
+    value: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    @IsOptional()
+    quantity: number;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    @IsOptional()
+    holdQuantity: number;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    @IsOptional()
+    winningRate: number;      
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    campaign: number;
+}
 
 export class RewardRequestDto {
     @ApiProperty()
@@ -18,16 +66,6 @@ export class RewardRequestDto {
     @IsNotEmpty()
     @IsEnum(TurnType)
     type: TurnType;
-
-    @ApiProperty({
-      type: 'enum',
-      required: true,
-      enum: RewardWinningType,
-      default: RewardWinningType.BASIC,
-    })
-    @IsNotEmpty()
-    @IsEnum(RewardWinningType)
-    winningType: RewardWinningType;
 
     @ApiProperty()
     @IsNotEmpty()
@@ -52,7 +90,7 @@ export class RewardRequestDto {
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
-    campaignId: number;
+    campaign: number;
 }
 
 export class SpinRewardRequestDto {
