@@ -89,4 +89,16 @@ export class CampaignService {
         })
         return result;
     }
+
+    async update(id: string, body: CampaignRequestDto) {
+        const campaign = await this.campaignRepository.findOne({
+            where: { id: Number(id) },
+        });
+        if (!campaign) {
+            throw new ApiError(CampaignError.CAMPAIGN_NOT_FOUND);
+        }
+
+        return await this.campaignRepository.save({ ...campaign, ...body });
+    }
+
 }

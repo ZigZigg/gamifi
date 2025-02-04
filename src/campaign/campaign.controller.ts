@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UsePipes, V
 import { CampaignService } from './services/campaign.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CampaignRequestDto } from './dtos/request/campaign.request.dto';
+import { CampaignRequestDto, CampaignUpdateRequestDto } from './dtos/request/campaign.request.dto';
 import { ApiResult } from 'src/common/classes/api-result';
 
 
@@ -25,4 +25,12 @@ export class CampaignController {
         const campaign = await this.campaignService.getCurrentActiveCampaign();
         return new ApiResult().success(campaign);
     }
+
+        @Put(':id')
+        @UsePipes(new ValidationPipe({ transform: true }))
+        async update(@Param('id') id: string, @Body() body: CampaignUpdateRequestDto) {
+            const campaign = await this.campaignService.update(id, body);
+            return new ApiResult().success();
+        }
+
 }

@@ -49,6 +49,27 @@ export class MpointService {
     }
   }
 
+  async getMyPointVoucher(voucherId:string){
+
+    try {
+      const options = {
+          headers: {
+              'X-Api-Key': this.configService.thirdPartyApi.mpointApiKey
+          },
+      }
+      const response = await axios.get(`${this.configService.thirdPartyApi.mpointUrl}/8854/gup2start/partner/rest/product/api/v1.0/product/vouchers/${voucherId}`, options);
+
+      const {code, error_code, data} = response.data;
+      if(code !== 200 && error_code){
+        throw new ApiError('Get voucher detail failed - error code: ' + error_code);
+      }
+      return  data
+    } catch (error) {
+        const {error_message} = error.response?.data || {}
+        throw new ApiError( error_message ? error_message  : AuthError.INVALID_MYPOINT_ACCOUNT)
+    }
+  }
+
   async sendRewardMP(phone: string, reward: Rewards){
     const  {turnType, value} = reward
     if(phone.length < 10){
@@ -76,13 +97,21 @@ export class MpointService {
           value: Number(rewardValue)
         }
       }
+      let voucherData = null
+      if(rewardType === 'VOUCHER'){
+        const resultVoucher = await this.getMyPointVoucher(rewardValue)
+        voucherData=resultVoucher
+      }
+
       const responseCreate = await axios.post(`${this.configService.thirdPartyApi.mpointUrl}/8854/gup2start/partner/rest/product/api/v1.0/rewardGameMBF`, payload, options);
       const {code, error_code} = responseCreate.data;
       if(code !== 200 && error_code){
         throw new ApiError('Send request to Mpoint failed - error code: ' + error_code);
       }
       this.logger.log(`Send reward to MyPoint with phone: ${phone} and reward: ${JSON.stringify(reward)}`)
-      return  true
+      return  {
+        voucherData
+      }
     } catch (error) {
         const {error_message} = error.response?.data || {}
         throw new ApiError( error_message ? `Send reward to MyPoint failed with phone ${phone}: ` + error_message  : AuthError.INVALID_MYPOINT_ACCOUNT)

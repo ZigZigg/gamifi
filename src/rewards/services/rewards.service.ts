@@ -288,6 +288,7 @@ export class RewardsService {
                 }
             }
             const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
+            let additionalVoucherData = null
 
             await this.entityManager.transaction(async (transactionalEntityManager) => {
 
@@ -298,9 +299,9 @@ export class RewardsService {
                     const totalPoint = Number(winningReward.value) || 0;
                     await this.mmbfService.updateGameResult({sessionId: resultGameSession, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
                 }
-
                 if(['MP_SCORE', 'VOUCHER_MP'].includes(winningReward.turnType.value)){
-                    await this.mpointService.sendRewardMP(user.phoneNumber, winningReward);
+                    const resultVoucher = await this.mpointService.sendRewardMP(user.phoneNumber, winningReward);
+                    additionalVoucherData = resultVoucher.voucherData
                 }
                 
                 const updatedRewardResult = await transactionalEntityManager.createQueryBuilder()
@@ -326,7 +327,7 @@ export class RewardsService {
                     receiveDate: new Date().toISOString(), 
                 });
             })
-            return {...winningReward, name: rewardNaming.text};
+            return {...winningReward, name: rewardNaming.text, additionalVoucherData: additionalVoucherData || null};
         } catch (error) {
             throw error;
         } finally {
