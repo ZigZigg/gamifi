@@ -17,6 +17,9 @@ export class RewardHistory {
   @Column({ type: 'timestamp', name: 'receive_date' })
   receiveDate: Date;
 
+  @Column()
+  note: string;
+
   @CreateDateColumn({ name: 'created_at' })
   @ApiProperty({ type: 'string', format: 'date-time', name: 'created_at' })
   createdAt: Date;

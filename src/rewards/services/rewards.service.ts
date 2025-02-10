@@ -321,10 +321,12 @@ export class RewardsService {
                 );
 
                 // Save reward history
+                const noteHistory = additionalVoucherData ? `${additionalVoucherData?.content?.name  || additionalVoucherData?.name} (ID:  ${additionalVoucherData?.id})` : '';
                 await transactionalEntityManager.save(RewardHistory, {
                     reward: winningReward.id as any,
                     user: user.id as any,
                     receiveDate: new Date().toISOString(), 
+                    note: noteHistory
                 });
             })
             return {...winningReward, name: rewardNaming.text, additionalVoucherData: additionalVoucherData || null};

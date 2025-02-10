@@ -78,14 +78,13 @@ export class RewardRequestDto {
     quantity: number;
 
     @ApiProperty()
-    @IsNotEmpty()
     @IsNumber()
     holdQuantity: number;
 
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
-    winningRate: number;      
+    winningRate: number;
 
     @ApiProperty()
     @IsNotEmpty()

@@ -90,9 +90,9 @@ export class RewardHistoryService {
       );
     }
     if (isExport) {
-      queryBuilder.orderBy('id', 'ASC');
+      queryBuilder.orderBy('created_at', 'DESC');
     } else {
-      queryBuilder.orderBy('id', 'ASC').limit(limit).offset(offset);
+      queryBuilder.orderBy('created_at', 'DESC').limit(limit).offset(offset);
     }
     const [results, count] = await Promise.all([
       queryBuilder.getRawMany(),
@@ -143,6 +143,7 @@ export class RewardHistoryService {
         fullName: record.user?.fullName || '-',
         rewardType: record.turntype?.name || '-',
         rewardValue: record.reward?.value || '-',
+        note: record.note || '-',
         receiveDate: moment(record.receive_date).format('DD/MM/YYYY HH:mm:ss')  || '-',
       }
     })
@@ -153,6 +154,7 @@ export class RewardHistoryService {
       { header: 'Họ tên', key: 'fullName', width: 50 },
       { header: 'Loại quà', key: 'rewardType', width: 50 },
       { header: 'Giá trị quà', key: 'rewardValue', width: 50 },
+      { header: 'Ghi chú', key: 'note', width: 100 },
       { header: 'Ngày nhận quà', key: 'receiveDate', width: 50 },
     ]
     worksheet.addRows(newRecords);
