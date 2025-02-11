@@ -227,7 +227,7 @@ export class RewardsService {
         const totalRating = rewards.reduce((acc, reward) => acc + parseFloat(reward.winningRate.toString()), 0);
 
         // Check if total rating + new rating > 100, return error
-        if(totalRating + rating > 100) {
+        if(totalRating + rating > 110) {
             throw new ApiError(RewardError.RATING_EXCEED)
         }
 
