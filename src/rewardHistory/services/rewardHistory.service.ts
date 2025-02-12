@@ -98,8 +98,14 @@ export class RewardHistoryService {
       queryBuilder.getRawMany(),
       queryBuilder.getCount(),
     ]);
+    const currentResult = results.map((result) => {
+      return {
+        ...result,
+        receive_date: moment(result.receive_date).add(7, 'hours').format()
+      }
+    })
     return {
-      records: results,
+      records: currentResult,
       total: count,
     };
   }
@@ -144,7 +150,7 @@ export class RewardHistoryService {
         rewardType: record.turntype?.name || '-',
         rewardValue: record.reward?.value || '-',
         note: record.note || '-',
-        receiveDate: moment(record.receive_date).format('DD/MM/YYYY HH:mm:ss')  || '-',
+        receiveDate: moment(record.receive_date).format('YYYY-MM-DD HH:mm:ss')  || '-',
       }
     })
     const workbook = new Workbook();
