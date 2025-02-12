@@ -130,10 +130,10 @@ export class RewardsService {
         if (!campaignObject) {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
-        const validate = await this.validateRating(campaign, winningRate, type);
-        if(!validate) {
-            throw new ApiError(RewardError.UPDATE_REWARD_FAILED)
-        }
+        // const validate = await this.validateRating(campaign, winningRate, type);
+        // if(!validate) {
+        //     throw new ApiError(RewardError.UPDATE_REWARD_FAILED)
+        // }
         const result = await this.entityManager.transaction(async (transactionalEntityManager) => {
             const rewardObject = {
                 holdQuantity: body.holdQuantity,
@@ -227,7 +227,7 @@ export class RewardsService {
         const totalRating = rewards.reduce((acc, reward) => acc + parseFloat(reward.winningRate.toString()), 0);
 
         // Check if total rating + new rating > 100, return error
-        if(totalRating + rating > 110) {
+        if(totalRating + rating > 100) {
             throw new ApiError(RewardError.RATING_EXCEED)
         }
 
@@ -300,6 +300,8 @@ export class RewardsService {
                     await this.mmbfService.updateGameResult({sessionId: resultGameSession, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
                 }
                 if(['MP_SCORE', 'VOUCHER_MP'].includes(winningReward.turnType.value)){
+                    // Log if reward is MP_SCORE or VOUCHER_MP
+                    this.logger.log(`User ${user.phoneNumber} win ${rewardNaming.text} (ID: ${winningReward.id})`);
                     const resultVoucher = await this.mpointService.sendRewardMP(user.phoneNumber, winningReward);
                     additionalVoucherData = resultVoucher.voucherData
                 }

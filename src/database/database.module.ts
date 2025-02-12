@@ -24,7 +24,7 @@ import { LoggerFactory } from '../common/services/logger.service';
         password: configService.db.pass,
         database: configService.db.name,
         entities: [join(__dirname + '/**/models/*.entity{.ts,.js}')],
-        logging: true,
+        logging: false,
         synchronize: false,
         migrationsRun: true,
         migrations: [
