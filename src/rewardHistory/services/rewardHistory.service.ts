@@ -78,12 +78,12 @@ export class RewardHistoryService {
         new Brackets((qb) => {
           if (startDate) {
             qb.where(`"receive_date" >= :startDate`, {
-              startDate,
+              startDate: moment(startDate).subtract(7, 'hours').toISOString(),
             });
           }
           if (endDate) {
             qb.andWhere(`"receive_date" <= :endDate`, {
-              endDate,
+              endDate: moment(endDate).subtract(7, 'hours').toISOString(),
             });
           }
         }),
@@ -116,7 +116,7 @@ export class RewardHistoryService {
       where: { user: { id: user.id } },
       relations: ['reward', 'reward.turnType']
     });
-    const currentRewardHistory = rewardHistory.map((rewardHistory) => {
+    let currentRewardHistory = rewardHistory.map((rewardHistory) => {
       const reward = rewardHistory.reward;
       const rewardType = CommonService.rewardIntoEnumString(reward)
       return {
@@ -124,6 +124,16 @@ export class RewardHistoryService {
         rewardType
       }
     })
+
+    // const findAirPodReward = currentRewardHistory.find((item) => item.reward?.turnType.value === 'AIRPOD_DEVICE');
+    // if(findAirPodReward){ 
+    //   currentRewardHistory = currentRewardHistory.filter((item) => !['AIRPOD_PIECE_1','AIRPOD_PIECE_2','AIRPOD_PIECE_3'].includes(item.reward?.turnType.value));
+    // }
+
+    // const findIphoneReward = currentRewardHistory.find((item) => item.reward?.turnType.value === 'IPHONE_DEVICE');
+    // if(findIphoneReward){
+    //   currentRewardHistory = currentRewardHistory.filter((item) => !['IP_PIECE_1','IP_PIECE_2','IP_PIECE_3'].includes(item.reward?.turnType.value));
+    // }
     // Group reward and count rewardHistory inside each group
     const groupedRewardHistory = currentRewardHistory.reduce((acc, curr) => {
       const rewardTypeKey = curr.rewardType;
