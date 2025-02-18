@@ -160,7 +160,9 @@ export class RewardsService {
                   }).format(winningRate - parseFloat(reward.winningRate.toString()));
                 const currentDiffRate = parseFloat(formatDiffRate);
                 const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) - currentDiffRate;
-                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: currentGoodLuckRate});
+                const parseGLRate = isNaN(currentGoodLuckRate) ? currentGoodLuckRate : Number(currentGoodLuckRate.toFixed(5));
+                
+                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: parseGLRate});
             }
             return rewardResult;
         })
