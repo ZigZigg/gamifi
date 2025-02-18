@@ -1,9 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { InjectRepository } from "@nestjs/typeorm";
+import { InjectEntityManager, InjectRepository } from "@nestjs/typeorm";
+import { TokenUserInfo } from "src/auth/dtos";
 import { AppConfig } from "src/common/constants/constants";
 import { Campaign, CampaignStatus } from "src/database/models/campaign.entity";
 import { MasterData } from "src/database/models/master-data.entity";
+import { RewardHistory } from "src/database/models/reward-history.entity";
 import { Rewards, RewardStatus } from "src/database/models/rewards.entity";
 import { EntityManager, Repository } from "typeorm";
 
@@ -12,12 +14,15 @@ export class RewardsListener {
     private readonly logger = new Logger(this.constructor.name);
     constructor(
         // private readonly entityManager: EntityManager,
+        @InjectEntityManager(AppConfig.DB)
+        private readonly entityManager: EntityManager,
         @InjectRepository(MasterData, AppConfig.DB)
         private readonly masterRepository: Repository<MasterData>,
         @InjectRepository(Rewards, AppConfig.DB)
         private readonly rewardRepository: Repository<Rewards>,
           @InjectRepository(Campaign, AppConfig.DB)
           private readonly campaignRepository: Repository<Campaign>,
+          
     ) {}
 
     @OnEvent('hold-reward.triggered')
@@ -66,4 +71,25 @@ export class RewardsListener {
     }
 
     }
+    @OnEvent('save-history-reward.triggered')
+    async saveHistoryReward(rewardData: Rewards, user: TokenUserInfo, additionalVoucherData: any){
+      try {
+        await this.entityManager.transaction(async (transactionalEntityManager) => {
+            const ratingHistory = parseFloat(rewardData.winningRate.toString())
+            const noteHistory = additionalVoucherData 
+            ? `${additionalVoucherData?.content?.name || additionalVoucherData?.name} (ID:  ${additionalVoucherData?.id}) - Tỉ lệ ${ratingHistory}% - Gói ${rewardData.type}` 
+            : `Tỉ lệ ${ratingHistory}% - Gói ${rewardData.type}`;
+            await transactionalEntityManager.save(RewardHistory, {
+                reward: rewardData.id as any,
+                user: user.id as any,
+                receiveDate: new Date().toISOString(),
+                note: noteHistory
+            });
+        })
+        this.logger.log(`Save history reward successfully for reward id: ${rewardData.id}`);
+      } catch (error) {
+        this.logger.error(`Error when save history reward id ${rewardData.id} : ${error.message}`);
+      }
+    }
+  
 }

@@ -22,8 +22,8 @@ import { MasterService } from './master.service';
 
 @Injectable()
 export class RewardsService {
-        private readonly logger = new Logger(this.constructor.name);
-    
+    private readonly logger = new Logger(this.constructor.name);
+
     constructor(
         @InjectEntityManager(AppConfig.DB)
         private readonly entityManager: EntityManager,
@@ -42,40 +42,40 @@ export class RewardsService {
         private readonly configService: ConfigService,
         private readonly masterDataService: MasterService,
         private readonly rewardHistoryService: RewardHistoryService
-    ) {}
+    ) { }
 
     async getList(params: SearchRewardRequestDto, user?: TokenUserInfo) {
-        const {limit, offset, type} =params
+        const { limit, offset, type } = params
         // get active campaign
         const campaign = await this.campaignRepository.findOne({
             where: { status: CampaignStatus.ACTIVE },
         });
-        if(!campaign) {
+        if (!campaign) {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
         let queryBuilder = this.rewardRepository.createQueryBuilder('rw')
-        .select('rw.*, CAST(rw."winning_rate" as float),  CAST(rw."initial_winning_rate" as float), CAST(rw."quantity" as int), CAST(rw."initial_quantity" as int)')
-        .where('rw."campaignId" = :campaignId', {campaignId: campaign.id})
-        .andWhere('rw."type" = :type', {type})
+            .select('rw.*, CAST(rw."winning_rate" as float),  CAST(rw."initial_winning_rate" as float), CAST(rw."quantity" as int), CAST(rw."initial_quantity" as int)')
+            .where('rw."campaignId" = :campaignId', { campaignId: campaign.id })
+            .andWhere('rw."type" = :type', { type })
 
         // Get turn type object
         queryBuilder.leftJoin(
             MasterData,
             'md',
             `md."id" = rw."turnTypeId"`,
-          )
-          .addSelect(
-            ` json_build_object('id', md.id, 'name', md."name", 'value', md.value) as turnType`,
-          );
-          queryBuilder.orderBy('id', 'ASC').limit(limit).offset(offset);
-          const [results, count] = await Promise.all([
+        )
+            .addSelect(
+                ` json_build_object('id', md.id, 'name', md."name", 'value', md.value) as turnType`,
+            );
+        queryBuilder.orderBy('id', 'ASC').limit(limit).offset(offset);
+        const [results, count] = await Promise.all([
             queryBuilder.getRawMany(),
             queryBuilder.getCount(),
-          ]);
-          return {
+        ]);
+        return {
             records: results,
             total: count,
-          };
+        };
     }
 
     async delete(id: string) {
@@ -90,31 +90,31 @@ export class RewardsService {
             const masterDataGoodLuck = await this.masterRepository.findOne({
                 where: { value: 'GOOD_LUCK' },
             })
-    
+
             // Get active campaign
             const campaign = await this.campaignRepository.findOne({
                 where: { status: CampaignStatus.ACTIVE },
             });
-            if(!campaign) {
+            if (!campaign) {
                 throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
             }
-    
+
             const goodLuckReward = await this.rewardRepository.findOne({
                 where: { campaign: { id: campaign.id }, type: reward.type, turnType: { id: masterDataGoodLuck.id } }
             })
-            if(goodLuckReward) {
+            if (goodLuckReward) {
                 const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) + parseFloat(reward.winningRate.toString());
-                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: currentGoodLuckRate});
+                await transactionalEntityManager.update(Rewards, { id: goodLuckReward.id }, { winningRate: currentGoodLuckRate });
             }
             return deleteResult;
-            
+
         })
 
         return result;
     }
 
     async update(id: string, body: RewardUpdateRequestDto) {
-        const {campaign, winningRate, type} = body
+        const { campaign, winningRate, type } = body
         // Check if reward exist
         const reward = await this.rewardRepository.findOne({
             where: { id: parseInt(id) },
@@ -123,7 +123,7 @@ export class RewardsService {
             throw new ApiError(RewardError.REWARD_NOT_FOUND)
         }
         // Find campaign by id
-        const campaignObject = await this.campaignRepository.findOne({            
+        const campaignObject = await this.campaignRepository.findOne({
             where: { id: campaign },
         });
         // If campaign not found, return error
@@ -145,7 +145,7 @@ export class RewardsService {
                 turnType: body.turnTypeId as any,
             }
 
-            const rewardResult = await transactionalEntityManager.update(Rewards, {id: parseInt(id)}, rewardObject);
+            const rewardResult = await transactionalEntityManager.update(Rewards, { id: parseInt(id) }, rewardObject);
             const masterDataGoodLuck = await this.masterRepository.findOne({
                 where: { value: 'GOOD_LUCK' },
             })
@@ -153,16 +153,16 @@ export class RewardsService {
             const goodLuckReward = await this.rewardRepository.findOne({
                 where: { campaign: { id: campaign }, type, turnType: { id: masterDataGoodLuck.id } }
             })
-            if(goodLuckReward) {
+            if (goodLuckReward) {
                 const formatDiffRate = new Intl.NumberFormat('en-US', {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 12,
-                  }).format(winningRate - parseFloat(reward.winningRate.toString()));
+                }).format(winningRate - parseFloat(reward.winningRate.toString()));
                 const currentDiffRate = parseFloat(formatDiffRate);
                 const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) - currentDiffRate;
                 const parseGLRate = isNaN(currentGoodLuckRate) ? currentGoodLuckRate : Number(currentGoodLuckRate.toFixed(5));
-                
-                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: parseGLRate});
+
+                await transactionalEntityManager.update(Rewards, { id: goodLuckReward.id }, { winningRate: parseGLRate });
             }
             return rewardResult;
         })
@@ -170,9 +170,9 @@ export class RewardsService {
     }
 
     async create(body: RewardRequestDto) {
-        const {campaign, winningRate, type} = body
+        const { campaign, winningRate, type } = body
         // Find campaign by id
-        const campaignResult = await this.campaignRepository.findOne({            
+        const campaignResult = await this.campaignRepository.findOne({
             where: { id: campaign },
         });
         // If campaign not found, return error
@@ -180,7 +180,7 @@ export class RewardsService {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
         const validate = await this.validateRating(campaign, winningRate, type);
-        if(!validate) {
+        if (!validate) {
             throw new ApiError(RewardError.CREATE_REWARD_FAILED)
         }
         const result = await this.entityManager.transaction(async (transactionalEntityManager) => {
@@ -201,9 +201,9 @@ export class RewardsService {
             const goodLuckReward = await this.rewardRepository.findOne({
                 where: { campaign: { id: campaign }, type, turnType: { id: masterDataGoodLuck.id } }
             })
-            if(goodLuckReward) {
+            if (goodLuckReward) {
                 const currentGoodLuckRate = parseFloat(goodLuckReward.winningRate.toString()) - winningRate;
-                await transactionalEntityManager.update(Rewards, {id: goodLuckReward.id}, {winningRate: currentGoodLuckRate, initialWinningRate: currentGoodLuckRate});
+                await transactionalEntityManager.update(Rewards, { id: goodLuckReward.id }, { winningRate: currentGoodLuckRate, initialWinningRate: currentGoodLuckRate });
             }
             return reward;
         })
@@ -215,50 +215,51 @@ export class RewardsService {
         const masterDataGoodLuck = await this.masterRepository.findOne({
             where: { value: 'GOOD_LUCK' },
         })
-        if(!masterDataGoodLuck) {
+        if (!masterDataGoodLuck) {
             throw new ApiError(RewardError.DEFAULT_MASTER_DATA_NOT_FOUND)
         }
         // Get all rewards of this campaign, except good luck
         const rewards = await this.rewardRepository.find({
-            where: { campaign: { id: campaignId }, type, turnType:{id: Not(masterDataGoodLuck.id)} }
+            where: { campaign: { id: campaignId }, type, turnType: { id: Not(masterDataGoodLuck.id) } }
         });
-        if(!rewards.length) {
+        if (!rewards.length) {
             return true;
         }
         // Sum all rating of rewards
         const totalRating = rewards.reduce((acc, reward) => acc + parseFloat(reward.winningRate.toString()), 0);
 
         // Check if total rating + new rating > 100, return error
-        if(totalRating + rating > 100) {
+        if (totalRating + rating > 100) {
             throw new ApiError(RewardError.RATING_EXCEED)
         }
 
         return true;
     }
 
-    async handleProcessSpinReward(data: SpinRewardRequestDto, user: TokenUserInfo){
-        const {spinTypeNumber, tokenSso, ctkmId} = data
+    async handleProcessSpinReward(data: SpinRewardRequestDto, user: TokenUserInfo) {
+        const { spinTypeNumber, tokenSso, ctkmId } = data
+
         const rewardKey = `lucky-draw:${user.id}:lock`;
         // Check if user still locked
         const isLocked = await this.redis.get(rewardKey);
         if (isLocked) {
-          throw new HttpException('User is locked with spinning', HttpStatus.TOO_MANY_REQUESTS);
+            throw new HttpException('User is locked with spinning', HttpStatus.TOO_MANY_REQUESTS);
         }
 
         await this.redis.set(rewardKey, 'locked', 2);
         try {
-            
+
             // Get active campaign
             const campaign = await this.campaignRepository.findOne({
                 where: { status: CampaignStatus.ACTIVE },
             });
 
-            if(!campaign) {
+            if (!campaign) {
                 throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
             }
             // Check user turn type = FREE/PAID
             let turnType = TurnType.FREE;
-            if(ConditionTurnType.PAID.includes(spinTypeNumber)) {
+            if (ConditionTurnType.PAID.includes(spinTypeNumber)) {
                 turnType = TurnType.PAID;
             }
 
@@ -267,25 +268,25 @@ export class RewardsService {
             rewards = await this.rewardRepository.find({
                 where: { campaign: { id: campaign.id }, type: turnType },
                 relations: ['turnType']
-                });
+            });
 
-            if(!rewards.length) {
+            if (!rewards.length) {
                 throw new ApiError(RewardError.REWARDS_EMPTY)
             }
 
             let winningReward = this.handleSpinReward(rewards);
-            if(!winningReward){
+            if (!winningReward) {
                 throw new ApiError(RewardError.REWARD_NOT_FOUND)
             }
 
             const checkIfRewardReachLimit = await this.checkIfRewardReachLimit(winningReward);
             const checkIfCraftRewardAlreadyReceived = await this.checkIfCraftRewardAlreadyReceived(winningReward, user);
 
-            if(checkIfRewardReachLimit || checkIfCraftRewardAlreadyReceived){
+            if (checkIfRewardReachLimit || checkIfCraftRewardAlreadyReceived) {
                 this.logger.error('Reward reach limit or reward craft already received')
 
                 const goodLuckReward = rewards.find(item => item.turnType.value === 'GOOD_LUCK');
-                if(goodLuckReward){
+                if (goodLuckReward) {
                     winningReward = goodLuckReward;
                 }
             }
@@ -296,27 +297,27 @@ export class RewardsService {
 
                 // Start session game mmbf and send result
 
-                if(this.configService.thirdPartyApi.enableRegisterMmbf === 'true'){
-                    const resultGameSession = await this.mmbfService.registerGameSession({tokenSso, phone: user.phoneNumber, ctkmId, rewardId: winningReward.id});
+                if (this.configService.thirdPartyApi.enableRegisterMmbf === 'true') {
+                    const resultGameSession = await this.mmbfService.registerGameSession({ tokenSso, phone: user.phoneNumber, ctkmId, rewardId: winningReward.id });
                     const totalPoint = Number(winningReward.value) || 0;
-                    await this.mmbfService.updateGameResult({sessionId: resultGameSession, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id});
+                    await this.mmbfService.updateGameResult({ sessionId: resultGameSession, totalPoint, point: rewardNaming.type || 0, ctkmId, rewardId: winningReward.id });
                 }
-                if(['MP_SCORE', 'VOUCHER_MP'].includes(winningReward.turnType.value)){
+                if (['MP_SCORE', 'VOUCHER_MP'].includes(winningReward.turnType.value)) {
                     // Log if reward is MP_SCORE or VOUCHER_MP
                     this.logger.log(`User ${user.phoneNumber} win ${rewardNaming.text} (ID: ${winningReward.id})`);
                     const resultVoucher = await this.mpointService.sendRewardMP(user.phoneNumber, winningReward);
                     additionalVoucherData = resultVoucher.voucherData
                 }
-                
+
                 const updatedRewardResult = await transactionalEntityManager.createQueryBuilder()
-                .update(Rewards)
-                .set({ quantity: () => 'quantity - 1' })
-                .where('id = :id AND quantity > 0', { id: winningReward.id })
-                .execute();
+                    .update(Rewards)
+                    .set({ quantity: () => 'quantity - 1' })
+                    .where('id = :id AND quantity > 0', { id: winningReward.id })
+                    .execute();
                 if (updatedRewardResult.affected === 0) {
                     throw new ApiError(RewardError.REWARD_OUT_OF_STOCK)
                 }
-                
+
                 // Check hold quantity
                 this.eventEmitter.emit(
                     'hold-reward.triggered',
@@ -325,15 +326,14 @@ export class RewardsService {
                 );
 
                 // Save reward history
-                const noteHistory = additionalVoucherData ? `${additionalVoucherData?.content?.name  || additionalVoucherData?.name} (ID:  ${additionalVoucherData?.id})` : '';
-                await transactionalEntityManager.save(RewardHistory, {
-                    reward: winningReward.id as any,
-                    user: user.id as any,
-                    receiveDate: new Date().toISOString(), 
-                    note: noteHistory
-                });
+                this.eventEmitter.emit(
+                    'save-history-reward.triggered',
+                    winningReward,
+                    user,
+                    additionalVoucherData
+                );
             })
-            return {...winningReward, name: rewardNaming.text, additionalVoucherData: additionalVoucherData || null};
+            return { ...winningReward, name: rewardNaming.text, additionalVoucherData: additionalVoucherData || null };
         } catch (error) {
             throw error;
         } finally {
@@ -342,8 +342,8 @@ export class RewardsService {
 
     }
 
-    async craftReward(rewardIds: number[], currentUser: TokenUserInfo){
-        if(!rewardIds.length) {
+    async craftReward(rewardIds: number[], currentUser: TokenUserInfo) {
+        if (!rewardIds.length) {
             throw new ApiError(RewardError.REWARDS_EMPTY)
         }
         // Get active campaign
@@ -351,7 +351,7 @@ export class RewardsService {
             where: { status: CampaignStatus.ACTIVE },
         });
 
-        if(!campaign) {
+        if (!campaign) {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
 
@@ -361,7 +361,7 @@ export class RewardsService {
         const rewardHistoriesById = rewardHistories.filter((rewardHistory) => {
             return rewardIds.includes(rewardHistory.reward.id)
         })
-        if(!rewardHistoriesById?.length){
+        if (!rewardHistoriesById?.length) {
             throw new ApiError(RewardError.REWARD_CRAFT_NOT_MATCH)
         }
         const rewardTypeData = rewardHistoriesById.map(item => {
@@ -369,7 +369,7 @@ export class RewardsService {
             return `${item.reward?.turnType?.value || 'UNKNOWN'}`
         }).sort().join('_');
         const matchedReward = FullCraftReward.find(item => item.craftString === rewardTypeData);
-        if(!matchedReward){
+        if (!matchedReward) {
             throw new ApiError(RewardError.REWARD_CRAFT_NOT_MATCH)
         }
 
@@ -387,7 +387,7 @@ export class RewardsService {
                 relations: ['turnType']
             })
 
-            if(!winningReward) {
+            if (!winningReward) {
                 throw new ApiError(RewardError.MISSING_REWARD_MASTER_DATA)
             }
 
@@ -395,7 +395,7 @@ export class RewardsService {
             await transactionalEntityManager.save(RewardHistory, {
                 reward: winningReward.id as any,
                 user: currentUser.id as any,
-                receiveDate: new Date().toISOString(), 
+                receiveDate: new Date().toISOString(),
             });
         })
 
@@ -403,20 +403,20 @@ export class RewardsService {
 
     }
 
-    async getRewardStocks(){
+    async getRewardStocks() {
         // Get active campaign
         const campaign = await this.campaignRepository.findOne({
             where: { status: CampaignStatus.ACTIVE },
         });
 
-        if(!campaign) {
+        if (!campaign) {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
-        const ignoreRewardsType  = ['GOOD_LUCK', 'AIRPOD_DEVICE', 'IPHONE_DEVICE']
+        const ignoreRewardsType = ['GOOD_LUCK', 'AIRPOD_DEVICE', 'IPHONE_DEVICE']
         const rewards = await this.rewardRepository.find({
-            where: { 
-            campaign: { id: campaign.id },
-            turnType: { value: Not(In(ignoreRewardsType)) }
+            where: {
+                campaign: { id: campaign.id },
+                turnType: { value: Not(In(ignoreRewardsType)) }
             },
             relations: ['turnType']
         });
@@ -427,7 +427,7 @@ export class RewardsService {
                 nameType: CommonService.rewardIntoEnumString(reward).key,
             }
         })
-        if(!rewardStocks.length) {
+        if (!rewardStocks.length) {
             throw new ApiError(RewardError.REWARDS_EMPTY)
         }
         const groupedRewardStocks = rewardStocks.reduce((acc, reward) => {
@@ -444,64 +444,64 @@ export class RewardsService {
         return result;
     }
 
-    handleSpinReward(rewards: Rewards[]){
+    handleSpinReward(rewards: Rewards[]) {
         if (!rewards || rewards.length === 0) {
             throw new ApiError(RewardError.REWARDS_EMPTY);
         }
 
-        const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()) , 0);
+        const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()), 0);
 
         if (totalRating <= 0) {
             throw new ApiError(RewardError.INVALID_TOTAL_RATING);
         }
 
         const random = Math.random() * totalRating;
-        
+
         let cumulative = 0;
         for (const reward of rewards) {
-            cumulative +=  parseFloat(reward.winningRate.toString());
+            cumulative += parseFloat(reward.winningRate.toString());
 
             if (random <= cumulative) {
-            return reward;
+                return reward;
             }
         }
         throw new ApiError(RewardError.REWARD_NOT_FOUND);
     }
 
-    async checkIfRewardReachLimit(winningReward: Rewards){
+    async checkIfRewardReachLimit(winningReward: Rewards) {
         const rewardStockToday: any = await this.redis.get(REDIS_KEY.REWARD_CURRENT_STOCK_LIST);
-        if(!rewardStockToday?.length){
+        if (!rewardStockToday?.length) {
             return false
         }
         const currentRewardWithStockToday = rewardStockToday.find((item: any) => item.id === winningReward.id);
-        if(!currentRewardWithStockToday || currentRewardWithStockToday.quantity < 5){
+        if (!currentRewardWithStockToday || currentRewardWithStockToday.quantity < 5) {
             return false
         }
-        const {quantity} = currentRewardWithStockToday
+        const { quantity } = currentRewardWithStockToday
         // get 20% of quantity
         const limitQuantity = Math.floor(Number(quantity) * 0.2);
         const remainingQuantity = Number(quantity) - Number(winningReward.quantity);
-        if(remainingQuantity >= limitQuantity){
+        if (remainingQuantity >= limitQuantity) {
             return true
         }
         return false
     }
 
-    checkWinningTurnType(totalTurn: number): RewardWinningType | null{
+    checkWinningTurnType(totalTurn: number): RewardWinningType | null {
         const currentTurn = totalTurn + 1;
-        if(currentTurn === 1){
+        if (currentTurn === 1) {
             return RewardWinningType.NOLUCK
         }
-        if([3 ,6].includes(currentTurn)){
+        if ([3, 6].includes(currentTurn)) {
             return RewardWinningType.BASIC
         }
-        if(currentTurn === 15){
+        if (currentTurn === 15) {
             return RewardWinningType.MID
         }
         return null;
     }
 
-    async saveCurrentStockToday(){
+    async saveCurrentStockToday() {
         try {
             // Get list rewards from cached
             const masterData: any = await this.masterDataService.getMasterDataFromCache();
@@ -511,7 +511,7 @@ export class RewardsService {
             const campaign = await this.campaignRepository.findOne({
                 where: { status: CampaignStatus.ACTIVE },
             });
-            if(!campaign) {
+            if (!campaign) {
                 this.logger.error('Campaign not found')
                 return
             }
@@ -530,22 +530,22 @@ export class RewardsService {
         } catch (error) {
             this.logger.error('Error when saveCurrentStockToday', error)
         }
-        
+
     }
 
-    async checkHoldStock(){
+    async checkHoldStock() {
         try {
             // Get current Active campaign
             const campaign = await this.campaignRepository.findOne({
                 where: { status: CampaignStatus.ACTIVE },
             });
-            if(!campaign) {
+            if (!campaign) {
                 this.logger.error('Campaign not found')
                 return
             }
-            const {startDateHold, endDateHold} = campaign
+            const { startDateHold, endDateHold } = campaign
             const checkIfValidHoldDate = this.checkValiHolddDate(startDateHold, endDateHold);
-            if(!checkIfValidHoldDate){
+            if (!checkIfValidHoldDate) {
                 this.logger.error('Invalid hold date')
                 return
             }
@@ -559,33 +559,33 @@ export class RewardsService {
         }
     }
 
-    checkValiHolddDate(startDate: Date, endDate: Date){
+    checkValiHolddDate(startDate: Date, endDate: Date) {
         // Check valid date should be: 
         // startDate should less than endDate
         // startDate should less than current date and endDate should greater than current date
 
         const currentDate = new Date().toISOString();
-        if(new Date(startDate) > new Date(endDate)){
+        if (new Date(startDate) > new Date(endDate)) {
             return false
         }
 
-        if(new Date(startDate) > new Date(currentDate) || new Date(endDate) < new Date(currentDate)){
+        if (new Date(startDate) > new Date(currentDate) || new Date(endDate) < new Date(currentDate)) {
             return false
         }
         return true
     }
 
-    async checkIfCraftRewardAlreadyReceived(winningReward: Rewards, currentUser: TokenUserInfo){
+    async checkIfCraftRewardAlreadyReceived(winningReward: Rewards, currentUser: TokenUserInfo) {
         const rewardHistory = await this.rewardHistoryRepository.find({
             where: { user: { id: currentUser.id } },
             relations: ['reward', 'reward.turnType']
         });
         const iphoneReward = rewardHistory.find(item => item.reward.turnType.value === 'IPHONE_DEVICE');
-        if(iphoneReward && ['IP_PIECE_1', 'IP_PIECE_2', 'IP_PIECE_3'].includes(winningReward.turnType.value)){
+        if (iphoneReward && ['IP_PIECE_1', 'IP_PIECE_2', 'IP_PIECE_3'].includes(winningReward.turnType.value)) {
             return true
-        } 
+        }
         const airpodReward = rewardHistory.find(item => item.reward.turnType.value === 'AIRPOD_DEVICE');
-        if(airpodReward && ['AIRPOD_PIECE_1', 'AIRPOD_PIECE_2', 'AIRPOD_PIECE_3'].includes(winningReward.turnType.value)){
+        if (airpodReward && ['AIRPOD_PIECE_1', 'AIRPOD_PIECE_2', 'AIRPOD_PIECE_3'].includes(winningReward.turnType.value)) {
             return true
         }
         return false
