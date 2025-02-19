@@ -3,10 +3,11 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiResult } from 'src/common/classes/api-result';
 import { RewardsService } from './services/rewards.service';
-import { CraftRewardRequestDto, RewardRequestDto, RewardUpdateRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
+import { CraftRewardRequestDto, RequestVipRewardDto, RewardRequestDto, RewardUpdateRequestDto, SearchRewardRequestDto, SpinRewardRequestDto } from './dtos/request/reward.request.dto';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { TokenUserInfo } from 'src/auth/dtos';
 import { MasterService } from './services/master.service';
+import { RewardVipService } from './services/rewardVip.service';
 
 
 @Controller('rewards')
@@ -16,6 +17,7 @@ import { MasterService } from './services/master.service';
 export class RewardsController {
     constructor(
         private readonly rewardsService: RewardsService,
+        private readonly rewardVipService: RewardVipService,
         private readonly masterDataService: MasterService
     ) {}
 
@@ -80,5 +82,18 @@ export class RewardsController {
     async deleteReward(@Param('id') id: string) {
         const result = await this.rewardsService.delete(id)
         return new ApiResult().success(result);
+    }
+
+    @Post('/addVip')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async addVip(@Body() body: RequestVipRewardDto) {
+        const campaign = await this.rewardVipService.createVip(body);
+        return new ApiResult().success(campaign);
+    }
+    @Get('/listVip')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async listVip() {
+        const campaign = await this.rewardVipService.getList();
+        return new ApiResult().success(campaign);
     }
 }

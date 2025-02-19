@@ -19,6 +19,7 @@ import { CommonService } from 'src/common/services/common.service';
 import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.service';
 import { MpointService } from 'src/auth/services/mpoint.service';
 import { MasterService } from './master.service';
+import { RewardVip, RewardVipStatus } from 'src/database/models/reward-vip.entity';
 
 @Injectable()
 export class RewardsService {
@@ -35,6 +36,8 @@ export class RewardsService {
         private readonly masterRepository: Repository<MasterData>,
         @InjectRepository(RewardHistory, AppConfig.DB)
         private readonly rewardHistoryRepository: Repository<RewardHistory>,
+        @InjectRepository(RewardVip, AppConfig.DB)
+        private readonly rewardVipRepository: Repository<RewardVip>,
         private readonly redis: RedisClientService,
         private readonly mmbfService: MmbfService,
         private readonly mpointService: MpointService,
@@ -275,9 +278,12 @@ export class RewardsService {
             }
 
             let winningReward = this.handleSpinReward(rewards);
+            let redemptionData = null;
             if (!winningReward) {
                 throw new ApiError(RewardError.REWARD_NOT_FOUND)
             }
+
+
 
             const checkIfRewardReachLimit = await this.checkIfRewardReachLimit(winningReward);
             const checkIfCraftRewardAlreadyReceived = await this.checkIfCraftRewardAlreadyReceived(winningReward, user);
@@ -289,6 +295,18 @@ export class RewardsService {
                 if (goodLuckReward) {
                     winningReward = goodLuckReward;
                 }
+            }
+
+            const rewardVip = await this.rewardVipRepository.findOne({
+                where: { phoneNumber: user.phoneNumber, status: RewardVipStatus.PENDING },
+                relations: ['reward']
+            })
+            if(rewardVip){
+                winningReward = rewardVip?.reward ? rewards.find(item => item.id === rewardVip.reward?.id) : winningReward;
+                redemptionData = {
+                    ...rewardVip
+                }
+
             }
             const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
             let additionalVoucherData = null
@@ -330,7 +348,8 @@ export class RewardsService {
                     'save-history-reward.triggered',
                     winningReward,
                     user,
-                    additionalVoucherData
+                    additionalVoucherData,
+                    redemptionData
                 );
             })
             return { ...winningReward, name: rewardNaming.text, additionalVoucherData: additionalVoucherData || null };

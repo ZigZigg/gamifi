@@ -16,14 +16,16 @@ import { RewardHistoryService } from 'src/rewardHistory/services/rewardHistory.s
 import { RewardsSchedule } from './rewards.schedule';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MasterService } from './services/master.service';
+import { RewardVip } from 'src/database/models/reward-vip.entity';
+import { RewardVipService } from './services/rewardVip.service';
 
 // create module
 @Module({
     imports: [
         ScheduleModule.forRoot(),
-        TypeOrmModule.forFeature([Campaign, Rewards, MasterData, RewardHistory], AppConfig.DB)
+        TypeOrmModule.forFeature([Campaign, Rewards, MasterData, RewardHistory, RewardVip], AppConfig.DB)
     ],
-    providers: [RewardsService, MmbfService, MpointService, RewardsListener, RewardHistoryService, RewardsSchedule, MasterService],
+    providers: [RewardsService, MmbfService, MpointService, RewardsListener, RewardHistoryService, RewardsSchedule, MasterService, RewardVipService],
     controllers: [RewardsController],
 })
 export class RewardsModule {}

@@ -51,6 +51,17 @@ export class RewardUpdateRequestDto {
     campaign: number;
 }
 
+export class RequestVipRewardDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsNumber()
+  rewardId: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
+}
 export class RewardRequestDto {
     @ApiProperty()
     @IsNotEmpty()

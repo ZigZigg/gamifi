@@ -8,3 +8,4 @@ export * from './time-log.entity';
 export * from './user-campaign.entity';
 export * from './public-api.entity';
 export * from './public-api-logs.entity';
+export * from './reward-vip.entity';

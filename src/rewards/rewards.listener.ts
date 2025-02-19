@@ -6,6 +6,7 @@ import { AppConfig } from "src/common/constants/constants";
 import { Campaign, CampaignStatus } from "src/database/models/campaign.entity";
 import { MasterData } from "src/database/models/master-data.entity";
 import { RewardHistory } from "src/database/models/reward-history.entity";
+import { RewardVip, RewardVipStatus } from "src/database/models/reward-vip.entity";
 import { Rewards, RewardStatus } from "src/database/models/rewards.entity";
 import { EntityManager, Repository } from "typeorm";
 
@@ -20,8 +21,10 @@ export class RewardsListener {
         private readonly masterRepository: Repository<MasterData>,
         @InjectRepository(Rewards, AppConfig.DB)
         private readonly rewardRepository: Repository<Rewards>,
-          @InjectRepository(Campaign, AppConfig.DB)
-          private readonly campaignRepository: Repository<Campaign>,
+        @InjectRepository(RewardVip, AppConfig.DB)
+        private readonly rewardVipRepository: Repository<RewardVip>,
+        @InjectRepository(Campaign, AppConfig.DB)
+        private readonly campaignRepository: Repository<Campaign>,
           
     ) {}
 
@@ -72,11 +75,11 @@ export class RewardsListener {
 
     }
     @OnEvent('save-history-reward.triggered')
-    async saveHistoryReward(rewardData: Rewards, user: TokenUserInfo, additionalVoucherData: any){
+    async saveHistoryReward(rewardData: Rewards, user: TokenUserInfo, additionalVoucherData: any, redemptionData: any) {
       try {
         await this.entityManager.transaction(async (transactionalEntityManager) => {
-            const ratingHistory = parseFloat(rewardData.winningRate.toString())
-            const noteHistory = additionalVoucherData 
+            const ratingHistory = redemptionData?.id ? 100 : parseFloat(rewardData.winningRate.toString())
+            const noteHistory =  additionalVoucherData 
             ? `${additionalVoucherData?.content?.name || additionalVoucherData?.name} (ID:  ${additionalVoucherData?.id}) - Tỉ lệ ${ratingHistory}% - Gói ${rewardData.type}` 
             : `Tỉ lệ ${ratingHistory}% - Gói ${rewardData.type}`;
             await transactionalEntityManager.save(RewardHistory, {
@@ -85,6 +88,10 @@ export class RewardsListener {
                 receiveDate: new Date().toISOString(),
                 note: noteHistory
             });
+            if(redemptionData?.id){
+              // Update redemption status to REDEEMED
+              await transactionalEntityManager.update(RewardVip, { id: redemptionData.id }, { status: RewardVipStatus.REDEEMED });
+            }
         })
         this.logger.log(`Save history reward successfully for reward id: ${rewardData.id}`);
       } catch (error) {
