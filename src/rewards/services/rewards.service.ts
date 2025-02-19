@@ -250,6 +250,7 @@ export class RewardsService {
         }
 
         await this.redis.set(rewardKey, 'locked', 2);
+        this.logger.log(`User ${user.phoneNumber} is spinning with tokenSso ${tokenSso}`);
         try {
 
             // Get active campaign
