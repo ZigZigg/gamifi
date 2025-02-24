@@ -306,21 +306,31 @@ export class RewardsService {
             }
 
             // Reward vip redemption
-            const rewardVip = await this.rewardVipRepository.findOne({
-                where: { phoneNumber: user.phoneNumber, status: RewardVipStatus.PENDING },
+            const rewardVipList = await this.rewardVipRepository.find({
+                where: { phoneNumber: user.phoneNumber },
                 relations: ['reward']
             })
-            if(rewardVip){
-                const rewardAll = await this.rewardRepository.find({
-                    where: { campaign: { id: campaign.id }},
-                    relations: ['turnType']
-                });
-                const findVipReward = rewardAll.find(item => item.id === rewardVip.reward?.id)
-                winningReward = findVipReward || winningReward;
-                redemptionData = findVipReward ? {
-                    ...rewardVip
-                } : null
 
+            if(rewardVipList.length){
+                // Handle reward reject
+                const rewardReject = rewardVipList.find(item => item.status === RewardVipStatus.REJECT && winningReward.id === item.reward.id);
+                if(rewardReject){
+                    const goodLuckReward = rewards.find(item => item.turnType.value === 'GOOD_LUCK');
+                    winningReward = goodLuckReward
+                }else{
+                    const rewardAll = await this.rewardRepository.find({
+                        where: { campaign: { id: campaign.id }},
+                        relations: ['turnType']
+                    });
+                    const rewardVipPending = rewardVipList.filter(item => item.status === RewardVipStatus.PENDING);
+                    if(rewardVipPending[0]){
+                        const findVipReward = rewardAll.find(item => item.id === rewardVipPending[0].reward?.id)
+                        winningReward = findVipReward || winningReward;
+                        redemptionData = findVipReward ? {
+                            ...rewardVipPending[0]
+                        } : null
+                    }
+                }
             }
 
             const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
@@ -377,6 +387,7 @@ export class RewardsService {
     }
 
     async craftReward(rewardIds: number[], currentUser: TokenUserInfo) {
+        this.logger.log(`CRAFT_REWARD: User ${currentUser.phoneNumber} start craft reward ${rewardIds.join(',')}`);
         if (!rewardIds.length) {
             throw new ApiError(RewardError.REWARDS_EMPTY)
         }
@@ -395,6 +406,8 @@ export class RewardsService {
         const rewardHistoriesById = rewardHistories.filter((rewardHistory) => {
             return rewardIds.includes(rewardHistory.reward.id)
         })
+        this.logger.log(`CRAFT_REWARD: User ${currentUser.phoneNumber} - Reward histories ${rewardHistoriesById.map(item => item.reward?.id).join(',')}`);
+
         if (!rewardHistoriesById?.length) {
             throw new ApiError(RewardError.REWARD_CRAFT_NOT_MATCH)
         }
@@ -402,6 +415,7 @@ export class RewardsService {
 
             return `${item.reward?.turnType?.value || 'UNKNOWN'}`
         }).sort().join('_');
+        this.logger.log(`CRAFT_REWARD: User ${currentUser.phoneNumber} - Reward type data ${rewardTypeData}`);
         const matchedReward = FullCraftReward.find(item => item.craftString === rewardTypeData);
         if (!matchedReward) {
             throw new ApiError(RewardError.REWARD_CRAFT_NOT_MATCH)

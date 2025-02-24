@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 import { BasePageDTO } from "src/common/classes/pagination.dto";
+import { RewardVipStatus } from "src/database/models/reward-vip.entity";
 import { RewardWinningType, TurnType } from "src/database/models/rewards.entity";
 
 export class RewardUpdateRequestDto {
@@ -61,6 +62,16 @@ export class RequestVipRewardDto {
   @IsString()
   @IsNotEmpty()
   phoneNumber: string;
+
+  @ApiProperty({
+    type: 'enum',
+    required: true,
+    enum: RewardVipStatus,
+    default: RewardVipStatus.PENDING,
+  })
+  @IsEnum(RewardVipStatus)
+  @IsOptional()
+  status: RewardVipStatus;
 }
 export class RewardRequestDto {
     @ApiProperty()

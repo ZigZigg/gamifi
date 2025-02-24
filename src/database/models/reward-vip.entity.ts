@@ -6,6 +6,7 @@ import { Rewards } from './rewards.entity';
 export enum RewardVipStatus {
     PENDING='PENDING',
     REDEEMED='REDEEMED',
+    REJECT='REJECT',
   }
 
 @Entity('reward_vip')

@@ -30,7 +30,7 @@ export class RewardVipService {
     ) { }
 
     async createVip(body: RequestVipRewardDto){
-        const {phoneNumber, rewardId} = body
+        const {rewardId, status} = body
 
         // Check if reward exist
         const reward = await this.rewardRepository.findOne({ where: { id: rewardId } });
@@ -41,7 +41,7 @@ export class RewardVipService {
             const rewardVipObject = {
                 ...body,
                 reward: rewardId as any,
-                status: RewardVipStatus.PENDING
+                status: status || RewardVipStatus.PENDING
             }
             const reward = await transactionalEntityManager.save(RewardVip, rewardVipObject);
 
