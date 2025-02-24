@@ -47,6 +47,13 @@ export class RewardsService {
         private readonly rewardHistoryService: RewardHistoryService
     ) { }
 
+    async getListAllRewards(){
+        const rewards = await this.rewardRepository.find({
+            relations: ['turnType']
+        });
+        return rewards;
+    }
+
     async getList(params: SearchRewardRequestDto, user?: TokenUserInfo) {
         const { limit, offset, type } = params
         // get active campaign
@@ -298,17 +305,24 @@ export class RewardsService {
                 }
             }
 
+            // Reward vip redemption
             const rewardVip = await this.rewardVipRepository.findOne({
                 where: { phoneNumber: user.phoneNumber, status: RewardVipStatus.PENDING },
                 relations: ['reward']
             })
             if(rewardVip){
-                winningReward = rewardVip?.reward ? rewards.find(item => item.id === rewardVip.reward?.id) : winningReward;
-                redemptionData = {
+                const rewardAll = await this.rewardRepository.find({
+                    where: { campaign: { id: campaign.id }},
+                    relations: ['turnType']
+                });
+                const findVipReward = rewardAll.find(item => item.id === rewardVip.reward?.id)
+                winningReward = findVipReward || winningReward;
+                redemptionData = findVipReward ? {
                     ...rewardVip
-                }
+                } : null
 
             }
+
             const rewardNaming = CommonService.rewardIntoEnumString(winningReward);
             let additionalVoucherData = null
 

@@ -8,6 +8,7 @@ import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { TokenUserInfo } from 'src/auth/dtos';
 import { MasterService } from './services/master.service';
 import { RewardVipService } from './services/rewardVip.service';
+import { BasePageDTO } from 'src/common/classes/pagination.dto';
 
 
 @Controller('rewards')
@@ -42,6 +43,14 @@ export class RewardsController {
       })
     async getList(@Query() params: SearchRewardRequestDto, @CurrentUser() user) {
         const rewards = await this.rewardsService.getList(params, user);
+        return new ApiResult().success(rewards);
+    }
+    @Get('/all')
+    @ApiOperation({
+        summary: 'Get reward list data by custom field',
+      })
+    async getListAll() {
+        const rewards = await this.rewardsService.getListAllRewards()
         return new ApiResult().success(rewards);
     }
 
@@ -90,10 +99,25 @@ export class RewardsController {
         const campaign = await this.rewardVipService.createVip(body);
         return new ApiResult().success(campaign);
     }
+    @Put('/vip/:id')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    async updateVip(@Param('id') id: string, @Body() body: RequestVipRewardDto) {
+        const campaign = await this.rewardVipService.updateVip(id, body);
+        return new ApiResult().success(campaign);
+    }
+    @Delete('/vip/:id')
+    @UsePipes(new ValidationPipe({ transform: true }))
+    @ApiOkResponse({
+        description: 'Delete reward vip',
+    })
+    async deleteVip(@Param('id') id: string) {
+        const result = await this.rewardVipService.deleteVip(id)
+        return new ApiResult().success(result);
+    }
     @Get('/listVip')
     @UsePipes(new ValidationPipe({ transform: true }))
-    async listVip() {
-        const campaign = await this.rewardVipService.getList();
+    async listVip(@Query() params: BasePageDTO) {
+        const campaign = await this.rewardVipService.getList(params);
         return new ApiResult().success(campaign);
     }
 }
