@@ -460,7 +460,7 @@ export class RewardsService {
         if (!campaign) {
             throw new ApiError(RewardError.CAMPAIGN_NOT_FOUND)
         }
-        const ignoreRewardsType = ['GOOD_LUCK', 'AIRPOD_DEVICE', 'IPHONE_DEVICE']
+        const ignoreRewardsType = ['GOOD_LUCK']
         const rewards = await this.rewardRepository.find({
             where: {
                 campaign: { id: campaign.id },
@@ -468,7 +468,31 @@ export class RewardsService {
             },
             relations: ['turnType']
         });
-
+        
+        const artifactRewards = await this.rewardHistoryRepository.find({
+            where: {
+                reward:{
+                    turnType: {value: In(['IPHONE_DEVICE', 'AIRPOD_DEVICE'])}
+                }
+            },
+            relations: ['reward.turnType']
+        });
+        const currentArtifactRewards = artifactRewards.map((rewardHistory) => {
+            const reward = rewardHistory.reward;
+            const rewardType = CommonService.rewardIntoEnumString(reward)
+            return {
+              ...rewardHistory,
+              rewardType
+            }
+          })
+        const groupedRewardHistory = currentArtifactRewards.reduce((acc, curr) => {
+            const rewardTypeKey = curr.rewardType;
+            if (!acc[rewardTypeKey.key]) {
+              acc[rewardTypeKey.key] = { reward: curr.reward, count: 0 };
+            }
+            acc[rewardTypeKey.key].count += 1;
+            return acc;
+          }, {});
         const rewardStocks = rewards.map((reward) => {
             return {
                 ...reward,
@@ -484,7 +508,16 @@ export class RewardsService {
             if (!acc[nameType]) {
                 acc[nameType] = { ...reward, quantity: 0 };
             }
-            acc[nameType].quantity += currentQuantity;
+            if(['IPHONE_DEVICE','AIRPOD_DEVICE'].includes(nameType)){
+                if (acc['IPHONE_DEVICE']) {
+                    acc['IPHONE_DEVICE'].quantity = groupedRewardHistory['IPHONE_DEVICE'] ? 1 - groupedRewardHistory['IPHONE_DEVICE'].count : 1;
+                }
+                if (acc['AIRPOD_DEVICE']) {
+                    acc['AIRPOD_DEVICE'].quantity = groupedRewardHistory['AIRPOD_DEVICE'] ? 10 - groupedRewardHistory['AIRPOD_DEVICE'].count : 10;
+                }
+            }else{
+                acc[nameType].quantity += currentQuantity;
+            }
             return acc;
         }, {});
 
@@ -496,7 +529,8 @@ export class RewardsService {
         if (!rewards || rewards.length === 0) {
             throw new ApiError(RewardError.REWARDS_EMPTY);
         }
-
+        // const testResult = rewards.find(item => item.id === 33);
+        // return testResult
         const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()), 0);
 
         if (totalRating <= 0) {
@@ -628,12 +662,8 @@ export class RewardsService {
             where: { user: { id: currentUser.id } },
             relations: ['reward', 'reward.turnType']
         });
-        const iphoneReward = rewardHistory.find(item => item.reward.turnType.value === 'IPHONE_DEVICE');
-        if (iphoneReward && ['IP_PIECE_1', 'IP_PIECE_2', 'IP_PIECE_3'].includes(winningReward.turnType.value)) {
-            return true
-        }
-        const airpodReward = rewardHistory.find(item => item.reward.turnType.value === 'AIRPOD_DEVICE');
-        if (airpodReward && ['AIRPOD_PIECE_1', 'AIRPOD_PIECE_2', 'AIRPOD_PIECE_3'].includes(winningReward.turnType.value)) {
+        const artifactRewards = rewardHistory.filter(item => ['IPHONE_DEVICE','AIRPOD_DEVICE'].includes(item.reward.turnType.value) );
+        if (artifactRewards.length && ['IP_PIECE_1', 'IP_PIECE_2', 'IP_PIECE_3', 'AIRPOD_PIECE_1', 'AIRPOD_PIECE_2', 'AIRPOD_PIECE_3'].includes(winningReward.turnType.value)) {
             return true
         }
         return false
