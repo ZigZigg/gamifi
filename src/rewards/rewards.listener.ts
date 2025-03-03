@@ -78,7 +78,7 @@ export class RewardsListener {
     async saveHistoryReward(rewardData: Rewards, user: TokenUserInfo, additionalVoucherData: any, redemptionData: any) {
       try {
         await this.entityManager.transaction(async (transactionalEntityManager) => {
-            const ratingHistory = redemptionData?.id ? 100 : parseFloat(rewardData.winningRate.toString())
+            const ratingHistory = redemptionData?.id ? 100 : parseFloat((rewardData.winningRate || 0).toString())
             const noteHistory =  additionalVoucherData 
             ? `${additionalVoucherData?.content?.name || additionalVoucherData?.name} (ID:  ${additionalVoucherData?.id}) - Tỉ lệ ${ratingHistory}% - Gói ${rewardData.type}` 
             : `Tỉ lệ ${ratingHistory}% - Gói ${rewardData.type}`;

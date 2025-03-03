@@ -288,7 +288,10 @@ export class RewardsService {
             let winningReward = this.handleSpinReward(rewards);
             let redemptionData = null;
             if (!winningReward) {
-                throw new ApiError(RewardError.REWARD_NOT_FOUND)
+                const goodLuckReward = rewards.find(item => item.turnType.value === 'GOOD_LUCK');
+                if (goodLuckReward) {
+                    winningReward = goodLuckReward;
+                }
             }
 
 
@@ -531,7 +534,9 @@ export class RewardsService {
         }
         // const testResult = rewards.find(item => item.id === 33);
         // return testResult
-        const totalRating = rewards.reduce((sum, reward) => sum + parseFloat(reward.winningRate.toString()), 0);
+        const totalRating = rewards.reduce((sum, reward) => {
+            return sum + parseFloat((reward.winningRate || 0).toString())
+        } , 0);
 
         if (totalRating <= 0) {
             throw new ApiError(RewardError.INVALID_TOTAL_RATING);
@@ -547,7 +552,6 @@ export class RewardsService {
                 return reward;
             }
         }
-        throw new ApiError(RewardError.REWARD_NOT_FOUND);
     }
 
     async checkIfRewardReachLimit(winningReward: Rewards) {
@@ -638,6 +642,64 @@ export class RewardsService {
             // Check if start
         } catch (error) {
             this.logger.error('Error when checkHoldStock', error)
+        }
+    }
+
+    async recalculateGoodLuckRate() {
+        try {
+            // Get current Active campaign
+            const campaign = await this.campaignRepository.findOne({
+                where: { status: CampaignStatus.ACTIVE },
+            });
+            if (!campaign) {
+                this.logger.error('Campaign not found')
+                return
+            }
+
+            await this.entityManager.transaction(async (transactionalEntityManager) => {
+                const masterDataGoodLuck = await this.masterRepository.findOne({
+                    where: { value: 'GOOD_LUCK' },
+                })
+                
+                // Recaclculate good luck rate for PAID
+                const goodLuckRewardPaid = await this.rewardRepository.findOne({
+                    where: { campaign: { id: campaign.id }, turnType: { id: masterDataGoodLuck.id }, type: TurnType.PAID }
+                })
+                if (!goodLuckRewardPaid) {
+                    this.logger.error('Good luck reward  PAID not found')
+                    return
+                }
+
+                const rewards = await this.rewardRepository.find({
+                    where: { campaign: { id: campaign.id }, type: TurnType.PAID, turnType: { id: Not(masterDataGoodLuck.id) } }
+                });
+                const totalRating = rewards.reduce((sum, reward) => {
+                    return sum + parseFloat((reward.winningRate || 0).toString())
+                } , 0);
+                const currentGoodLuckRate = 100 - Number(totalRating.toFixed(5));
+                await transactionalEntityManager.update(Rewards, { id: goodLuckRewardPaid.id }, { winningRate: currentGoodLuckRate });
+
+                // Recalculate good luck rate for FREE
+                const goodLuckRewardFree = await this.rewardRepository.findOne({
+                    where: { campaign: { id: campaign.id }, turnType: { id: masterDataGoodLuck.id }, type: TurnType.FREE }
+                })
+                if (!goodLuckRewardFree) {
+                    this.logger.error('Good luck reward FREE not found')
+                    return
+                }
+                const rewardsFree = await this.rewardRepository.find({
+                    where: { campaign: { id: campaign.id }, type: TurnType.FREE, turnType: { id: Not(masterDataGoodLuck.id) } }
+                });
+                const totalRatingFree = rewardsFree.reduce((sum, reward) => {
+                    return sum + parseFloat((reward.winningRate || 0).toString())
+                }
+                , 0);
+                const currentGoodLuckRateFree = 100 - Number(totalRatingFree.toFixed(5));
+                await transactionalEntityManager.update(Rewards, { id: goodLuckRewardFree.id }, { winningRate: currentGoodLuckRateFree });
+            })
+        } catch (error) {
+            this.logger.error('Error when recalculateGoodLuckRate', error)
+            
         }
     }
 

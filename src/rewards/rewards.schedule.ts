@@ -22,5 +22,10 @@ export class RewardsSchedule {
     this.logger.log('▷▷▷ RUN CHECK HOLD STOCK!');
     this.rewardsService.checkHoldStock()
   }
+  @Cron(CronExpression.EVERY_HOUR)
+  recalculateGoodLuckRate(){
+    this.logger.log('▷▷▷ RUN RECALCULATE GOOD LUCK RATE!');
+    this.rewardsService.recalculateGoodLuckRate()
+  }
 
 }
