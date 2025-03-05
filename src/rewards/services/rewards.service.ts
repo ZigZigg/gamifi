@@ -637,7 +637,7 @@ export class RewardsService {
             }
             await this.rewardRepository.update(
                 { campaign: { id: campaign.id } },
-                { winningRate: () => 'initialWinningRate', status: RewardStatus.ACTIVE }
+                { status: RewardStatus.ACTIVE }
             );
             // Check if start
         } catch (error) {
