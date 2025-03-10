@@ -296,10 +296,9 @@ export class RewardsService {
 
 
 
-            const checkIfRewardReachLimit = await this.checkIfRewardReachLimit(winningReward);
             const checkIfCraftRewardAlreadyReceived = await this.checkIfCraftRewardAlreadyReceived(winningReward, user);
 
-            if (checkIfRewardReachLimit || checkIfCraftRewardAlreadyReceived) {
+            if (checkIfCraftRewardAlreadyReceived) {
                 this.logger.error('Reward reach limit or reward craft already received')
 
                 const goodLuckReward = rewards.find(item => item.turnType.value === 'GOOD_LUCK');
