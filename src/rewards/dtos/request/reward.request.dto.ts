@@ -23,7 +23,6 @@ export class RewardUpdateRequestDto {
     type: TurnType;
 
     @ApiProperty()
-    @IsNotEmpty()
     @IsString()
     @IsOptional()
     value: string;
