@@ -50,6 +50,6 @@ export class RewardHistoryController {
         'Content-Disposition',
         `attachment; filename=reward-history-${Date.now()}.xlsx;`,
       );
-      res.send(fileBuffer);
+      res.end(fileBuffer);
     }
 }

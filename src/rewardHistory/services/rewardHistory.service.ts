@@ -9,9 +9,10 @@ import { SearchRewardHistoryRequestDto } from '../dtos/request/rewardHistory.req
 import { User } from 'src/database/models/user.entity';
 import { MasterData } from 'src/database/models/master-data.entity';
 import { Rewards } from 'src/database/models/rewards.entity';
-import { Workbook, Worksheet } from 'exceljs';
+import { Workbook } from 'exceljs';
 import * as moment from 'moment';
-
+import { Readable, Writable } from 'stream';
+import { pipeline } from 'stream/promises';
 
 @Injectable()
 export class RewardHistoryService {
@@ -150,19 +151,54 @@ export class RewardHistoryService {
 
   }
 
+  async getListHistoryWithExport(params: SearchRewardHistoryRequestDto){
+    const { limit, offset, phoneNumber, fullName, rewardType, startDate, endDate, isExport } = params;
+
+    let queryBuilder = this.rewardHistoryRepository.createQueryBuilder('rh')
+      .select('rh.*')
+      .leftJoin(User, 'u', `u."id" = rh."userId"`)
+      .addSelect(`json_build_object('id', u.id, 'fullName', u."full_name", 'phoneNumber', u.phone_number) as user`)
+      .leftJoin(Rewards, 'rw', `rw."id" = rh."rewardId"`)
+      .addSelect(`json_build_object('id', rw.id, 'turnTypeId', rw."turnTypeId", 'value', rw.value) as reward`)
+      .leftJoin(MasterData, 'md', `md."id" = rw."turnTypeId"`)
+      .addSelect(`json_build_object('id', md.id, 'name', md."name", 'value', md.value) as turnType`);
+
+    if (phoneNumber) {
+      queryBuilder.andWhere(`u.phone_number ILIKE :phoneNumber`, { phoneNumber: `%${phoneNumber}%` });
+    }
+
+    if (fullName) {
+      queryBuilder.andWhere(`u.full_name ILIKE :fullName`, { fullName: `%${fullName}%` });
+    }
+
+    if (rewardType) {
+      queryBuilder.andWhere(`md."id" = :turnTypeId`, { turnTypeId: rewardType });
+    }
+
+    if (startDate || endDate) {
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          if (startDate) {
+            qb.where(`"receive_date" >= :startDate`, { startDate: moment(startDate).subtract(7, 'hours').toISOString() });
+          }
+          if (endDate) {
+            qb.andWhere(`"receive_date" <= :endDate`, { endDate: moment(endDate).subtract(7, 'hours').toISOString() });
+          }
+        }),
+      );
+    }
+
+    queryBuilder.orderBy('created_at', 'DESC');
+
+    if (!isExport) {
+      queryBuilder.limit(limit).offset(offset);
+    }
+
+    return queryBuilder.stream();
+  }
+
   async generateAndExportData(params: SearchRewardHistoryRequestDto) {
-    const result = await this.getList({...params, isExport: true});
-    const {records} = result
-    const newRecords = records.map((record) => {
-      return {
-        phoneNumber: record.user?.phoneNumber || '-',
-        fullName: record.user?.fullName || '-',
-        rewardType: record.turntype?.name || '-',
-        rewardValue: record.reward?.value || '-',
-        note: record.note || '-',
-        receiveDate: moment(record.receive_date).format('YYYY-MM-DD HH:mm:ss')  || '-',
-      }
-    })
+    const stream = await this.getListHistoryWithExport({ ...params, isExport: true });
     const workbook = new Workbook();
     const worksheet = workbook.addWorksheet('Sheet 1');
     worksheet.columns = [
@@ -172,12 +208,42 @@ export class RewardHistoryService {
       { header: 'Giá trị quà', key: 'rewardValue', width: 50 },
       { header: 'Ghi chú', key: 'note', width: 100 },
       { header: 'Ngày nhận quà', key: 'receiveDate', width: 50 },
-    ]
-    worksheet.addRows(newRecords);
+    ];
 
-    //your excel worksheet content
+    const transformStream = new Readable({
+      objectMode: true,
+      read() {}
+    });
+
+    stream.on('data', (record: any) => {
+      const formattedRecord = {
+        phoneNumber: record.user?.phoneNumber || '-',
+        fullName: record.user?.fullName || '-',
+        rewardType: record.turnType?.name || '-',
+        rewardValue: record.reward?.value || '-',
+        note: record.note || '-',
+        receiveDate: moment(record.receive_date).add(7, 'hours').format('YYYY-MM-DD HH:mm:ss') || '-',
+      };
+      transformStream.push(formattedRecord);
+    });
+
+    stream.on('end', () => {
+      transformStream.push(null);
+    });
+    const writableStream = new Writable({
+      objectMode: true,
+      write(record, encoding, callback) {
+        worksheet.addRow(record);
+        callback();
+      }
+    });
+
+    await pipeline(
+      transformStream,
+      writableStream
+    );
+
     const fileBuffer = await workbook.xlsx.writeBuffer();
-
     return fileBuffer;
   }
 

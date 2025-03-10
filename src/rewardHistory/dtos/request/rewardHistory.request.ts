@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNumber, IsOptional, IsString } from "class-validator";
 import { BasePageDTO } from "src/common/classes/pagination.dto";
 import { CommonService } from "src/common/services/common.service";
 
@@ -34,19 +34,19 @@ export class SearchRewardHistoryRequestDto extends BasePageDTO {
     })
     isExport: boolean;
 
+    @IsOptional()
     @ApiProperty({
       type: 'string',
       required: false,
       description: 'Reward history from date',
     })
-    @IsNotEmpty()
     readonly startDate: string;
     
+    @IsOptional()
     @ApiProperty({
       type: 'string',
       required: false,
       description: 'Reward history to date',
     })
-    @IsNotEmpty()
     readonly endDate: string;
 }
