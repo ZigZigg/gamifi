@@ -219,7 +219,7 @@ export class RewardHistoryService {
       const formattedRecord = {
         phoneNumber: record.user?.phoneNumber || '-',
         fullName: record.user?.fullName || '-',
-        rewardType: record.turntype?.name || '-',
+        rewardType: record.turntype?.value || '-',
         rewardValue: record.reward?.value || '-',
         note: record.note || '-',
         receiveDate: moment(record.receive_date).add(7, 'hours').format('YYYY-MM-DD HH:mm:ss') || '-',
